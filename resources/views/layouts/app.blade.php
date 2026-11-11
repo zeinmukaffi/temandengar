@@ -161,6 +161,13 @@
                             Dashboard
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                        <a href="{{ route('journals.index') }}"
+                            class="nav-link {{ request()->routeIs('journals.*') ? 'active' : '' }}">
+                            Journaling
+                        </a>
+                    </li>
                 </ul>
 
                 {{-- Profil pengguna --}}

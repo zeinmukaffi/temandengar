@@ -48,43 +48,35 @@
     </div>
 
 
-    {{-- Feature cards --}}
     <div class="row g-4">
 
         {{-- Journaling --}}
         <div class="col-md-6">
-
             <div class="td-card">
                 <div class="feature-icon mb-3">J</div>
 
-                <h5 class="fw-bold mb-2">
-                    Journaling
-                </h5>
+                <h5 class="fw-bold mb-2">Journaling</h5>
 
                 <p class="text-td-muted small mb-3">
                     Tuangkan cerita dan pikiranmu melalui jurnal pribadi.
-                    Kamu juga bisa mendapatkan refleksi dari AI.
+                    Kamu juga bisa mencatat mood harian.
                 </p>
 
-                <span class="badge bg-light text-secondary">
-                    Segera Hadir
-                </span>
+                <a href="{{ route('journals.index') }}" class="btn btn-td">
+                    Buka Journaling
+                </a>
             </div>
-
         </div>
 
         {{-- Konsultasi --}}
         <div class="col-md-6">
-
             <div class="td-card">
                 <div class="feature-icon mb-3">K</div>
 
-                <h5 class="fw-bold mb-2">
-                    Konsultasi Sebaya
-                </h5>
+                <h5 class="fw-bold mb-2">Konsultasi Sebaya</h5>
 
                 <p class="text-td-muted small mb-3">
-                    Temukan profil konselor sebaya dan ajukan konsultasi
+                    Temukan konselor sebaya dan ajukan konsultasi
                     sesuai kebutuhanmu.
                 </p>
 
@@ -92,7 +84,6 @@
                     Segera Hadir
                 </span>
             </div>
-
         </div>
 
     </div>

@@ -54,7 +54,6 @@
 
             <div class="col-lg-5">
                 <div class="auth-card p-4 p-lg-5">
-                    <div class="feature-icon mb-4">T</div>
 
                     <h4 class="fw-bold text-td-primary mb-3">
                         Tidak harus selalu punya jawaban.

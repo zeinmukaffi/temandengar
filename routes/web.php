@@ -1,9 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JournalController;
+use App\Http\Controllers\MoodCheckinController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,5 +66,35 @@ Route::middleware('auth')->group(function () {
     // Logout.
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    // Journaling
+    Route::get('/journals', [JournalController::class, 'index'])
+        ->name('journals.index');
+
+    Route::get('/journals/create', [JournalController::class, 'create'])
+        ->name('journals.create');
+
+    Route::post('/journals', [JournalController::class, 'store'])
+        ->name('journals.store');
+
+    Route::get('/journals/{journal}', [JournalController::class, 'show'])
+        ->whereNumber('journal')
+        ->name('journals.show');
+
+    Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])
+        ->whereNumber('journal')
+        ->name('journals.edit');
+
+    Route::put('/journals/{journal}', [JournalController::class, 'update'])
+        ->whereNumber('journal')
+        ->name('journals.update');
+
+    Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])
+        ->whereNumber('journal')
+        ->name('journals.destroy');
+
+    // Mood Check-in
+    Route::post('/mood-checkins', [MoodCheckinController::class, 'store'])
+        ->name('mood-checkins.store');
 
 });
