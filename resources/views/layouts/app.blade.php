@@ -168,6 +168,16 @@
                             Journaling
                         </a>
                     </li>
+
+                    @if (auth()->user()->role === 'pencerita')
+                        <li class="nav-item">
+                            <a href="{{ route('counselors.index') }}"
+                                class="nav-link {{ request()->routeIs('counselors.*') || request()->routeIs('consultations.*') ? 'active fw-semibold' : '' }}">
+                                Konselor
+                            </a>
+                        </li>
+                    @endif
+
                 </ul>
 
                 {{-- Profil pengguna --}}

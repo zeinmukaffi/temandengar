@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\ConsultationController;
+use App\Http\Controllers\CounselorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\MoodCheckinController;
@@ -96,5 +98,30 @@ Route::middleware('auth')->group(function () {
     // Mood Check-in
     Route::post('/mood-checkins', [MoodCheckinController::class, 'store'])
         ->name('mood-checkins.store');
+
+    // Direktori Konselor
+    Route::get('/counselors', [CounselorController::class, 'index'])
+        ->name('counselors.index');
+
+    // Detail Profil Konselor
+    Route::get('/counselors/{counselor}', [CounselorController::class, 'show'])
+        ->whereNumber('counselor')
+        ->name('counselors.show');
+
+
+    // Pengajuan Konsultasi
+    Route::get(
+        '/counselors/{counselor}/consultations/create',
+        [ConsultationController::class, 'create']
+    )
+        ->whereNumber('counselor')
+        ->name('consultations.create');
+
+    Route::post(
+        '/counselors/{counselor}/consultations',
+        [ConsultationController::class, 'store']
+    )
+        ->whereNumber('counselor')
+        ->name('consultations.store');
 
 });
