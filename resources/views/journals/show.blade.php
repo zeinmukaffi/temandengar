@@ -7,6 +7,76 @@
     @php
         // Ambil refleksi terbaru untuk jurnal ini.
         $reflection = $journal->aiReflections->sortByDesc('created_at')->first();
+
+        // Konversi tampilan jurnal Guided versi lama (format pertanyaan-jawaban)
+        // menjadi cerita yang lebih natural. Konten database tidak diubah.
+        $displayContent = $journal->content;
+
+        $guidedQuestionLabels = [
+            'today' => 'Apa yang terjadi hari ini?',
+            'burden' => 'Apa hal yang paling membebani pikiranmu?',
+            'feeling' => 'Bagaimana perasaanmu menghadapi situasi tersebut?',
+            'support' => 'Dukungan atau perubahan apa yang kamu butuhkan sekarang?',
+        ];
+
+        if ($journal->entry_type === 'guided') {
+            $lines = preg_split('/\R/u', $journal->content) ?: [];
+            $answers = array_fill_keys(array_keys($guidedQuestionLabels), '');
+            $currentKey = null;
+            $currentAnswerLines = [];
+            $matchedAnyQuestion = false;
+
+            foreach ($lines as $line) {
+                $matchedKey = array_search(trim($line), $guidedQuestionLabels, true);
+
+                if ($matchedKey !== false) {
+                    if ($currentKey !== null) {
+                        $answers[$currentKey] = trim(implode("\n", $currentAnswerLines));
+                    }
+                    $currentKey = $matchedKey;
+                    $currentAnswerLines = [];
+                    $matchedAnyQuestion = true;
+                    continue;
+                }
+
+                if ($currentKey !== null) {
+                    $currentAnswerLines[] = $line;
+                }
+            }
+
+            if ($currentKey !== null) {
+                $answers[$currentKey] = trim(implode("\n", $currentAnswerLines));
+            }
+
+            if ($matchedAnyQuestion) {
+                $addPunctuation = static function (string $value): string {
+                    $value = trim($value);
+                    if ($value === '' || preg_match('/[.!?…]$/u', $value)) {
+                        return $value;
+                    }
+                    return $value . '.';
+                };
+
+                $paragraphs = [];
+                if ($answers['today'] !== '') {
+                    $paragraphs[] = $addPunctuation($answers['today']);
+                }
+                if ($answers['burden'] !== '') {
+                    $paragraphs[] =
+                        'Hal lain yang cukup membebani pikiranku adalah ' . $addPunctuation($answers['burden']);
+                }
+                if ($answers['feeling'] !== '') {
+                    $paragraphs[] =
+                        'Saat menghadapi situasi tersebut, perasaan yang muncul adalah ' .
+                        $addPunctuation($answers['feeling']);
+                }
+                if ($answers['support'] !== '') {
+                    $paragraphs[] = 'Saat ini, hal yang aku butuhkan adalah ' . $addPunctuation($answers['support']);
+                }
+
+                $displayContent = implode("\n\n", $paragraphs) ?: $journal->content;
+            }
+        }
     @endphp
 
     <div class="mb-4">
@@ -88,7 +158,7 @@
                 @endif
 
                 {{-- Isi jurnal --}}
-                <div style="white-space: pre-wrap; line-height: 1.9;">{{ $journal->content }}</div>
+                <div style="white-space: pre-wrap; line-height: 1.9;">{{ $displayContent }}</div>
 
                 <hr class="my-4">
 

@@ -122,6 +122,74 @@
     @else
         <div class="row g-3">
             @foreach ($journals as $journal)
+                @php
+                    $journalPreview = $journal->content;
+
+                    $guidedQuestionLabels = [
+                        'today' => 'Apa yang terjadi hari ini?',
+                        'burden' => 'Apa hal yang paling membebani pikiranmu?',
+                        'feeling' => 'Bagaimana perasaanmu menghadapi situasi tersebut?',
+                        'support' => 'Dukungan atau perubahan apa yang kamu butuhkan sekarang?',
+                    ];
+
+                    if ($journal->entry_type === 'guided') {
+                        $lines = preg_split('/\R/u', $journal->content) ?: [];
+                        $answers = array_fill_keys(array_keys($guidedQuestionLabels), '');
+                        $currentKey = null;
+                        $currentAnswerLines = [];
+                        $matchedAnyQuestion = false;
+
+                        foreach ($lines as $line) {
+                            $matchedKey = array_search(trim($line), $guidedQuestionLabels, true);
+
+                            if ($matchedKey !== false) {
+                                if ($currentKey !== null) {
+                                    $answers[$currentKey] = trim(implode("\n", $currentAnswerLines));
+                                }
+                                $currentKey = $matchedKey;
+                                $currentAnswerLines = [];
+                                $matchedAnyQuestion = true;
+                                continue;
+                            }
+
+                            if ($currentKey !== null) {
+                                $currentAnswerLines[] = $line;
+                            }
+                        }
+
+                        if ($currentKey !== null) {
+                            $answers[$currentKey] = trim(implode("\n", $currentAnswerLines));
+                        }
+
+                        if ($matchedAnyQuestion) {
+                            $paragraphs = [];
+                            if ($answers['today'] !== '') {
+                                $paragraphs[] = rtrim($answers['today'], '.!?…') . '.';
+                            }
+                            if ($answers['burden'] !== '') {
+                                $paragraphs[] =
+                                    'Hal lain yang cukup membebani pikiranku adalah ' .
+                                    rtrim($answers['burden'], '.!?…') .
+                                    '.';
+                            }
+                            if ($answers['feeling'] !== '') {
+                                $paragraphs[] =
+                                    'Saat menghadapi situasi tersebut, perasaan yang muncul adalah ' .
+                                    rtrim($answers['feeling'], '.!?…') .
+                                    '.';
+                            }
+                            if ($answers['support'] !== '') {
+                                $paragraphs[] =
+                                    'Saat ini, hal yang aku butuhkan adalah ' .
+                                    rtrim($answers['support'], '.!?…') .
+                                    '.';
+                            }
+
+                            $journalPreview = implode(' ', $paragraphs) ?: $journal->content;
+                        }
+                    }
+                @endphp
+
                 <div class="col-md-6">
                     <div class="td-card">
 
@@ -146,7 +214,7 @@
                         </h6>
 
                         <p class="text-td-muted small mb-3">
-                            {{ \Illuminate\Support\Str::limit($journal->content, 150) }}
+                            {{ \Illuminate\Support\Str::limit($journalPreview, 150) }}
                         </p>
 
                         @if ($journal->moodCheckin)
