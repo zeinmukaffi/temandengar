@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Counselor;
-use Illuminate\Http\Request;
+use App\Services\ConsultationSummaryService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -71,55 +72,39 @@ class CounselorConsultationController extends Controller
 
     /**
      * Detail permintaan konsultasi.
-     * Materi jurnal dan refleksi hanya diberikan
-     * kepada konselor jika Pencerita menyetujuinya.
+     * Materi hanya diambil dari snapshot yang telah disetujui Pencerita.
      */
     public function show(Request $request, int $consultation): View
     {
         $counselor = $this->getCounselor($request);
 
-        // Membatasi konsultasi berdasarkan profil konselor login.
+        // Hanya mengambil konsultasi milik konselor yang sedang login.
+        // Tidak memuat relasi jurnal atau AI Reflection secara langsung.
         $consultation = $counselor->consultations()
-            ->with([
-                'user',
-                'journal',
-                'aiReflection',
-            ])
+            ->with('user')
             ->findOrFail($consultation);
 
         /*
-         * Verifikasi kembali kepemilikan jurnal.
-         * Jangan tampilkan jurnal jika:
-         * - Tidak ada persetujuan berbagi.
-         * - Materi tidak tersedia.
-         * - Jurnal ternyata bukan milik Pencerita pengaju.
+         * Gunakan snapshot jurnal hanya jika ada persetujuan.
+         * Snapshot merupakan salinan materi saat pengajuan.
          */
-        $sharedJournal = null;
-
-        if (
+        $sharedJournal = (
             $consultation->share_journal &&
-            $consultation->journal &&
-            (int) $consultation->journal->user_id ===
-            (int) $consultation->user_id
-        ) {
-            $sharedJournal = $consultation->journal;
-        }
+            is_array($consultation->shared_journal_snapshot)
+        )
+            ? $consultation->shared_journal_snapshot
+            : null;
 
         /*
-         * Verifikasi persetujuan dan kepemilikan AI Reflection.
-         * Refleksi yang tidak disetujui tidak diberikan ke view.
+         * Gunakan snapshot AI Reflection secara independen.
+         * Persetujuan jurnal tidak otomatis mengizinkan AI Reflection.
          */
-        $sharedReflection = null;
-
-        if (
+        $sharedReflection = (
             $consultation->share_ai_reflection &&
-            $consultation->aiReflection &&
-            (int) $consultation->aiReflection->user_id ===
-            (int) $consultation->user_id &&
-            $consultation->aiReflection->status === 'completed'
-        ) {
-            $sharedReflection = $consultation->aiReflection;
-        }
+            is_array($consultation->shared_ai_reflection_snapshot)
+        )
+            ? $consultation->shared_ai_reflection_snapshot
+            : null;
 
         return view('counselor.consultations.show', compact(
             'counselor',
@@ -128,6 +113,77 @@ class CounselorConsultationController extends Controller
             'sharedReflection'
         ));
     }
+
+    /**
+     * Mencoba ulang pembuatan ringkasan konsultasi oleh Hermes.
+     *
+     * Ketentuan:
+     * - Hanya Konselor pemilik konsultasi yang boleh melakukan retry.
+     * - Hanya briefing dengan status failed yang boleh dicoba ulang.
+     * - Menggunakan konsultasi dan snapshot yang sama.
+     * - Mencegah retry ganda melalui perubahan status secara atomik.
+     */
+    public function retryBrief(
+        Request $request,
+        int $consultation
+    ): RedirectResponse {
+        $counselor = $this->getCounselor($request);
+
+        // Pastikan konsultasi memang milik Konselor yang login.
+        $record = $counselor->consultations()
+            ->findOrFail($consultation);
+
+        /*
+         * Ambil hak retry hanya jika status masih failed.
+         *
+         * Jika dua request masuk hampir bersamaan,
+         * hanya satu request yang bisa mengubah failed menjadi processing.
+         */
+        $claimed = $counselor->consultations()
+            ->whereKey($record->id)
+            ->where('brief_status', 'failed')
+            ->update([
+                'brief_status' => 'processing',
+                'brief_error' => null,
+            ]);
+
+        // Retry ditolak jika status sudah berubah.
+        if ($claimed !== 1) {
+            return redirect()
+                ->route('counselor.consultations.show', $record->id)
+                ->withErrors([
+                    'brief' => 'Ringkasan sedang diproses, sudah tersedia, atau tidak dapat dicoba ulang.',
+                ]);
+        }
+
+        // Muat ulang data dengan status processing.
+        $record->refresh();
+
+        /*
+         * Panggil service yang sama.
+         * Service akan mengirim ulang data dari snapshot
+         * yang sebelumnya telah disetujui Pencerita.
+         */
+        $generated = app(ConsultationSummaryService::class)
+            ->generate($record);
+
+        if ($generated) {
+            return redirect()
+                ->route('counselor.consultations.show', $record->id)
+                ->with(
+                    'success',
+                    'Ringkasan persiapan konsultasi berhasil dibuat ulang.'
+                );
+        }
+
+        return redirect()
+            ->route('counselor.consultations.show', $record->id)
+            ->withErrors([
+                'brief' => 'Ringkasan masih belum berhasil dibuat. Silakan coba lagi nanti.',
+            ]);
+    }
+
+
 
     /**
      * Menerima permintaan konsultasi.

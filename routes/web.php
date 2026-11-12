@@ -158,6 +158,13 @@ Route::middleware('auth')->group(function () {
             ])
                 ->whereNumber('consultation')
                 ->name('consultations.show');
+            // Mencoba ulang pembuatan ringkasan Hermes.
+            Route::patch('/consultations/{consultation}/brief/retry', [
+                CounselorConsultationController::class,
+                'retryBrief'
+            ])
+                ->whereNumber('consultation')
+                ->name('consultations.brief.retry');
 
             // Terima permintaan.
             Route::patch('/consultations/{consultation}/accept', [

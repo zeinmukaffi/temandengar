@@ -64,6 +64,13 @@
         </div>
     @endif
 
+    @if ($errors->has('brief'))
+        <div class="alert alert-warning alert-dismissible fade show">
+            {{ $errors->first('brief') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <div class="row g-4 consultation-detail-layout">
 
         {{-- Detail permintaan --}}
@@ -147,18 +154,24 @@
                         </span>
 
                         <h6 class="fw-bold">
-                            {{ $sharedJournal->title ?: 'Catatan Pribadi' }}
+                            {{ $sharedJournal['title'] ?? 'Catatan Pribadi' }}
                         </h6>
 
                         <div style=" line-height: 1.8;">
-                            {{ $sharedJournal->content }}
+                            {{ $sharedJournal['content'] ?? '' }}
                         </div>
 
                     </div>
                 @else
                     <div class="bg-light rounded-3 p-3 mb-3">
                         <p class="text-td-muted small mb-0">
-                            Pencerita tidak memberikan izin untuk membagikan isi jurnal.
+
+                            @if ($consultation->share_journal)
+                                Snapshot jurnal tidak tersedia untuk permintaan ini.
+                            @else
+                                Pencerita tidak memberikan izin untuk membagikan isi jurnal.
+                            @endif
+
                         </p>
                     </div>
                 @endif
@@ -172,7 +185,7 @@
                             AI Reflection Diizinkan untuk Dibagikan
                         </span>
 
-                        @if ($sharedReflection->summary)
+                        @if ($sharedReflection['summary'] ?? '')
                             <section class="mb-3">
 
                                 <h6 class="fw-bold small">
@@ -180,13 +193,13 @@
                                 </h6>
 
                                 <p class="small mb-0" style="line-height: 1.7;">
-                                    {{ $sharedReflection->summary }}
+                                    {{ $sharedReflection['summary'] ?? '' }}
                                 </p>
 
                             </section>
                         @endif
 
-                        @if ($sharedReflection->emotional_insight)
+                        @if ($sharedReflection['emotional_insight'] ?? '')
                             <section class="border-top pt-3 mb-3">
 
                                 <h6 class="fw-bold small">
@@ -194,13 +207,13 @@
                                 </h6>
 
                                 <p class="small mb-0" style="line-height: 1.7;">
-                                    {{ $sharedReflection->emotional_insight }}
+                                    {{ $sharedReflection['emotional_insight'] ?? '' }}
                                 </p>
 
                             </section>
                         @endif
 
-                        @if (!empty($sharedReflection->key_concerns))
+                        @if (!empty($sharedReflection['key_concerns'] ?? []))
                             <section class="border-top pt-3 mb-3">
 
                                 <h6 class="fw-bold small">
@@ -208,7 +221,7 @@
                                 </h6>
 
                                 <ul class="small mb-0">
-                                    @foreach ($sharedReflection->key_concerns as $concern)
+                                    @foreach ($sharedReflection['key_concerns'] ?? [] as $concern)
                                         <li>{{ $concern }}</li>
                                     @endforeach
                                 </ul>
@@ -216,7 +229,7 @@
                             </section>
                         @endif
 
-                        @if (!empty($sharedReflection->reflection_questions))
+                        @if (!empty($sharedReflection['reflection_questions'] ?? []))
                             <section class="border-top pt-3 mb-3">
 
                                 <h6 class="fw-bold small">
@@ -224,7 +237,7 @@
                                 </h6>
 
                                 <ol class="small mb-0">
-                                    @foreach ($sharedReflection->reflection_questions as $question)
+                                    @foreach ($sharedReflection['reflection_questions'] ?? [] as $question)
                                         <li class="mb-1">{{ $question }}</li>
                                     @endforeach
                                 </ol>
@@ -232,7 +245,7 @@
                             </section>
                         @endif
 
-                        @if (!empty($sharedReflection->suggested_steps))
+                        @if (!empty($sharedReflection['suggested_steps'] ?? []))
                             <section class="border-top pt-3">
 
                                 <h6 class="fw-bold small">
@@ -240,7 +253,7 @@
                                 </h6>
 
                                 <ul class="small mb-0">
-                                    @foreach ($sharedReflection->suggested_steps as $step)
+                                    @foreach ($sharedReflection['suggested_steps'] ?? [] as $step)
                                         <li>{{ $step }}</li>
                                     @endforeach
                                 </ul>
@@ -252,10 +265,15 @@
                 @else
                     <div class="bg-light rounded-3 p-3">
                         <p class="text-td-muted small mb-0">
-                            Pencerita tidak memberikan izin untuk membagikan AI Reflection.
+
+                            @if ($consultation->share_ai_reflection)
+                                Snapshot AI Reflection tidak tersedia untuk permintaan ini.
+                            @else
+                                Pencerita tidak memberikan izin untuk membagikan AI Reflection.
+                            @endif
+
                         </p>
                     </div>
-
                 @endif
 
             </div>
@@ -288,11 +306,26 @@
                     </div>
                 @elseif ($consultation->brief_status === 'failed')
                     <div class="bg-light rounded-3 p-3">
-                        <p class="text-td-muted small mb-0">
+
+                        <p class="text-td-muted small mb-3">
                             Ringkasan persiapan belum berhasil dibuat.
-                            Silakan gunakan informasi permintaan dan materi yang
-                            telah dibagikan untuk mempersiapkan konsultasi.
+                            Kamu masih dapat menggunakan informasi permintaan dan
+                            materi yang telah dibagikan untuk mempersiapkan konsultasi.
                         </p>
+
+                        <form id="briefRetryForm"
+                            action="{{ route('counselor.consultations.brief.retry', $consultation->id) }}" method="POST"
+                            onsubmit="return confirm('Apakah kamu ingin mencoba membuat ulang ringkasan konsultasi?')">
+
+                            @csrf
+                            @method('PATCH')
+
+                            <button type="submit" id="retryBriefButton" class="btn btn-outline-primary w-100">
+                                Coba Buat Ulang Ringkasan
+                            </button>
+
+                        </form>
+
                     </div>
                 @else
                     <div class="bg-light rounded-3 p-3">
@@ -461,12 +494,31 @@
 
     </div>
 
+    {{-- Loading overlay saat Hermes membuat ulang ringkasan --}}
+    <div id="briefRetryLoading" class="td-brief-loading" aria-hidden="true">
+        <div class="td-brief-loading__dialog" role="status" aria-live="polite" aria-atomic="true">
+
+            <div class="td-brief-loading__spinner" aria-hidden="true"></div>
+
+            <h5 class="fw-bold mb-2">
+                Membuat Ulang Ringkasan
+            </h5>
+
+            <p class="text-td-muted small mb-0">
+                Hermes sedang menyiapkan ringkasan konsultasi.
+                Proses ini mungkin memerlukan beberapa saat.
+                Jangan tutup halaman ini.
+            </p>
+
+        </div>
+    </div>
+
 
     <style>
         /*
-                     * Memperbaiki card yang terlalu panjang.
-                     * Hanya berlaku untuk halaman detail permintaan konselor.
-                     */
+                                                         * Memperbaiki card yang terlalu panjang.
+                                                         * Hanya berlaku untuk halaman detail permintaan konselor.
+                                                         */
         .consultation-detail-layout .consultation-compact-card {
             height: auto !important;
             min-height: 0 !important;
@@ -478,29 +530,154 @@
         }
 
         /*
-                     * Jarak antarkonten dibuat lebih ringkas.
-                     */
+                                                         * Jarak antarkonten dibuat lebih ringkas.
+                                                         */
         .consultation-detail-layout .consultation-compact-card {
             padding: 24px;
         }
 
         /*
-                     * Membuat isi jurnal dan refleksi lebih nyaman dibaca.
-                     */
+                                                         * Membuat isi jurnal dan refleksi lebih nyaman dibaca.
+                                                         */
         .consultation-detail-layout .consultation-compact-card p,
         .consultation-detail-layout .consultation-compact-card li {
             line-height: 1.7;
         }
 
         /*
-                     * Sidebar keputusan tetap berada setelah profil konselor.
-                     */
+                                                         * Sidebar keputusan tetap berada setelah profil konselor.
+                                                         */
         @media (min-width: 992px) {
             .consultation-detail-layout .col-lg-4 {
                 position: relative;
             }
         }
+
+        /* Loading overlay retry ringkasan Hermes */
+        .td-brief-loading {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 24px;
+            background: rgba(23, 39, 55, .48);
+
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+
+            transition: opacity .2s ease, visibility .2s ease;
+        }
+
+        /* Overlay aktif saat form retry dikirim */
+        .td-brief-loading.is-visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .td-brief-loading__dialog {
+            width: min(100%, 390px);
+            padding: 32px 28px;
+
+            border: 1px solid rgba(35, 71, 168, .08);
+            border-radius: 20px;
+
+            background: #fff;
+            text-align: center;
+
+            box-shadow: 0 20px 60px rgba(15, 35, 55, .18);
+        }
+
+        /* Animasi spinner */
+        .td-brief-loading__spinner {
+            width: 44px;
+            height: 44px;
+
+            margin: 0 auto 20px;
+
+            border: 4px solid #e7edf7;
+            border-top-color: #2347a8;
+            border-radius: 50%;
+
+            animation: brief-retry-spin .8s linear infinite;
+        }
+
+        @keyframes brief-retry-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .td-brief-loading__spinner {
+                animation-duration: 1.8s;
+            }
+
+            .td-brief-loading {
+                transition: none;
+            }
+        }
     </style>
 
+    <script>
+        (() => {
+            const form = document.getElementById('briefRetryForm');
+            const overlay = document.getElementById('briefRetryLoading');
+            const button = document.getElementById('retryBriefButton');
 
+            // Pastikan seluruh elemen tersedia.
+            if (!form || !overlay || !button) return;
+
+            let isSubmitting = false;
+
+            // Simpan teks awal tombol untuk pemulihan.
+            const originalButtonText = button.textContent.trim();
+
+            form.addEventListener('submit', (event) => {
+
+                // Mencegah pengiriman ulang akibat klik berulang.
+                if (isSubmitting) {
+                    event.preventDefault();
+                    return;
+                }
+
+                // Aktifkan status loading.
+                isSubmitting = true;
+
+                overlay.classList.add('is-visible');
+                overlay.setAttribute('aria-hidden', 'false');
+
+                // Nonaktifkan tombol dan ubah teks.
+                button.disabled = true;
+                button.setAttribute('aria-disabled', 'true');
+                button.textContent = 'Sedang Membuat Ringkasan...';
+
+                /*
+                 * Tidak memanggil preventDefault pada pengiriman pertama.
+                 * Browser tetap mengirim form ke Laravel seperti biasa.
+                 */
+            });
+
+            // Pulihkan tampilan ketika halaman selesai dimuat
+            // atau dikembalikan dari browser cache.
+            window.addEventListener('pageshow', () => {
+
+                isSubmitting = false;
+
+                overlay.classList.remove('is-visible');
+                overlay.setAttribute('aria-hidden', 'true');
+
+                button.disabled = false;
+                button.removeAttribute('aria-disabled');
+                button.textContent = originalButtonText;
+
+            });
+
+        })();
+    </script>
 @endsection
