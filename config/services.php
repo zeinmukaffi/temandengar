@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'n8n' => [
+        'journal_reflection_url' => env('N8N_JOURNAL_REFLECTION_URL'),
+
+        'webhook_header' => env(
+            'N8N_WEBHOOK_HEADER',
+            'X-TemanDengar-Token'
+        ),
+
+        'webhook_token' => env('N8N_WEBHOOK_TOKEN'),
+    ],
+
+
 ];

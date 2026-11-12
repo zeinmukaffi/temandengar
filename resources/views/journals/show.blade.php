@@ -4,6 +4,11 @@
 
 @section('content')
 
+    @php
+        // Ambil refleksi terbaru untuk jurnal ini.
+        $reflection = $journal->aiReflections->sortByDesc('created_at')->first();
+    @endphp
+
     <div class="mb-4">
         <a href="{{ route('journals.index') }}" class="text-td-primary text-decoration-none small">
             &larr; Kembali ke Journaling
@@ -96,49 +101,114 @@
 
         </div>
 
-        {{-- Panel AI --}}
+        {{-- Panel AI Reflection --}}
         <div class="col-lg-4">
 
-            <div class="td-card mb-4">
+            <div class="td-card">
                 <div class="feature-icon mb-3">AI</div>
 
                 <h5 class="fw-bold mb-2">AI Reflection</h5>
 
-                <p class="text-td-muted small">
-                    Hermes nantinya akan membantu merangkum cerita,
-                    mengidentifikasi kemungkinan emosi, dan memberikan
-                    pertanyaan refleksi.
+                <p class="text-td-muted small mb-3">
+                    Refleksi ini membantu merangkum cerita dan membuka ruang untuk memahami pengalamanmu.
+                    Hasilnya bukan diagnosis atau pengganti dukungan dari konselor.
                 </p>
 
-                @if ($journal->aiReflections->isNotEmpty())
+                @if ($reflection)
+                    <div class="border rounded-3 p-3">
+                        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                            <span class="fw-semibold">Refleksi Hermes</span>
 
-                    @foreach ($journal->aiReflections->sortByDesc('created_at') as $reflection)
-                        <div class="border rounded-3 p-3 mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="small fw-semibold">Refleksi AI</span>
-
-                                <span class="badge bg-light text-secondary">
-                                    {{ ucfirst($reflection->status) }}
-                                </span>
-                            </div>
-
-                            <p class="small mb-2">
-                                {{ \Illuminate\Support\Str::limit($reflection->summary, 180) }}
-                            </p>
-
-                            <span class="text-td-muted" style="font-size: 11px;">
-                                {{ $reflection->created_at->format('d M Y, H:i') }}
-                            </span>
+                            @if ($reflection->status === 'completed')
+                                <span class="badge bg-success-subtle text-success">Completed</span>
+                            @elseif ($reflection->status === 'pending')
+                                <span class="badge bg-warning-subtle text-warning">Pending</span>
+                            @else
+                                <span class="badge bg-danger-subtle text-danger">Failed</span>
+                            @endif
                         </div>
-                    @endforeach
+
+                        @if ($reflection->status === 'completed')
+
+                            {{-- Ringkasan cerita --}}
+                            @if ($reflection->summary)
+                                <section class="mb-3">
+                                    <h6 class="fw-bold small mb-2">Ringkasan Cerita</h6>
+                                    <p class="small mb-0" style="line-height: 1.7;">
+                                        {{ $reflection->summary }}
+                                    </p>
+                                </section>
+                            @endif
+
+                            {{-- Insight emosional --}}
+                            @if ($reflection->emotional_insight)
+                                <section class="border-top pt-3 mb-3">
+                                    <h6 class="fw-bold small mb-2">Insight Emosional</h6>
+                                    <p class="small mb-0" style="line-height: 1.7;">
+                                        {{ $reflection->emotional_insight }}
+                                    </p>
+                                </section>
+                            @endif
+
+                            {{-- Hal yang menjadi perhatian --}}
+                            @if (!empty($reflection->key_concerns))
+                                <section class="border-top pt-3 mb-3">
+                                    <h6 class="fw-bold small mb-2">Hal yang Menjadi Perhatian</h6>
+                                    <ul class="small ps-3 mb-0" style="line-height: 1.7;">
+                                        @foreach ($reflection->key_concerns as $concern)
+                                            <li class="mb-1">{{ $concern }}</li>
+                                        @endforeach
+                                    </ul>
+                                </section>
+                            @endif
+
+                            {{-- Pertanyaan refleksi --}}
+                            @if (!empty($reflection->reflection_questions))
+                                <section class="border-top pt-3 mb-3">
+                                    <h6 class="fw-bold small mb-2">Pertanyaan Refleksi</h6>
+                                    <ol class="small ps-3 mb-0" style="line-height: 1.7;">
+                                        @foreach ($reflection->reflection_questions as $question)
+                                            <li class="mb-2">{{ $question }}</li>
+                                        @endforeach
+                                    </ol>
+                                </section>
+                            @endif
+
+                            {{-- Langkah yang bisa dicoba --}}
+                            @if (!empty($reflection->suggested_steps))
+                                <section class="border-top pt-3">
+                                    <h6 class="fw-bold small mb-2">Langkah yang Bisa Dicoba</h6>
+                                    <ul class="small ps-3 mb-0" style="line-height: 1.7;">
+                                        @foreach ($reflection->suggested_steps as $step)
+                                            <li class="mb-1">{{ $step }}</li>
+                                        @endforeach
+                                    </ul>
+                                </section>
+                            @endif
+                        @elseif ($reflection->status === 'pending')
+                            <div class="bg-light rounded-3 p-3">
+                                <p class="small text-td-muted mb-0">
+                                    Refleksi sedang diproses. Silakan buka kembali halaman ini beberapa saat lagi.
+                                </p>
+                            </div>
+                        @else
+                            <div class="bg-light rounded-3 p-3">
+                                <p class="small text-td-muted mb-0">
+                                    Refleksi belum berhasil dibuat. Ceritamu tetap tersimpan dan bersifat pribadi.
+                                </p>
+                            </div>
+                        @endif
+
+                        <div class="text-td-muted mt-3" style="font-size: 11px;">
+                            Dibuat {{ $reflection->created_at->format('d M Y, H:i') }}
+                        </div>
+                    </div>
                 @else
                     <div class="bg-light rounded-3 p-3">
                         <p class="small text-td-muted mb-0">
-                            Refleksi AI belum tersedia. Integrasi Hermes
-                            akan ditambahkan pada tahap berikutnya.
+                            Belum ada refleksi AI untuk jurnal ini.
                         </p>
                     </div>
-
                 @endif
             </div>
 

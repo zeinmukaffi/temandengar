@@ -24,7 +24,7 @@
 
             <div class="td-card">
 
-                <form action="{{ route('journals.store') }}" method="POST">
+                <form id="journalCreateForm" action="{{ route('journals.store') }}" method="POST">
                     @csrf
 
                     {{-- Judul --}}
@@ -143,7 +143,7 @@
                             Batal
                         </a>
 
-                        <button type="submit" class="btn btn-td">
+                        <button type="submit" class="btn btn-td" data-journal-submit>
                             Simpan Jurnal
                         </button>
                     </div>
@@ -198,5 +198,120 @@
         </div>
 
     </div>
+
+
+    {{-- Loading overlay saat jurnal disimpan dan diproses Hermes --}}
+    <div id="journalLoadingOverlay" class="td-journal-loading" aria-hidden="true">
+        <div class="td-journal-loading__dialog" role="status" aria-live="polite" aria-atomic="true">
+            <div class="td-journal-loading__spinner" aria-hidden="true"></div>
+            <h5 class="fw-bold mb-2">Jurnal sedang disimpan</h5>
+            <p class="text-td-muted small mb-0">
+                Ceritamu sedang disimpan dan Hermes sedang menyiapkan refleksi.
+                Proses ini bisa memerlukan beberapa saat. Jangan tutup halaman ini.
+            </p>
+        </div>
+    </div>
+
+    <style>
+        .td-journal-loading {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(23, 39, 55, .48);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity .2s ease, visibility .2s ease;
+        }
+
+        .td-journal-loading.is-visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .td-journal-loading__dialog {
+            width: min(100%, 390px);
+            padding: 32px 28px;
+            border: 1px solid rgba(35, 71, 168, .08);
+            border-radius: 20px;
+            background: #fff;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(15, 35, 55, .18);
+        }
+
+        .td-journal-loading__spinner {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 20px;
+            border: 4px solid #e7edf7;
+            border-top-color: #2347a8;
+            border-radius: 50%;
+            animation: td-journal-spin .8s linear infinite;
+        }
+
+        @keyframes td-journal-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .td-journal-loading__spinner {
+                animation-duration: 1.8s;
+            }
+
+            .td-journal-loading {
+                transition: none;
+            }
+        }
+    </style>
+
+    <script>
+        (() => {
+            const form = document.getElementById('journalCreateForm');
+            const overlay = document.getElementById('journalLoadingOverlay');
+
+            if (!form || !overlay) return;
+
+            let isSubmitting = false;
+            const submitButtons = form.querySelectorAll('[data-journal-submit]');
+
+            form.addEventListener('submit', (event) => {
+                // Cegah pengiriman ganda akibat klik berulang.
+                if (isSubmitting) {
+                    event.preventDefault();
+                    return;
+                }
+
+                // Event submit hanya berjalan setelah validasi HTML form lolos.
+                isSubmitting = true;
+                overlay.classList.add('is-visible');
+                overlay.setAttribute('aria-hidden', 'false');
+
+                submitButtons.forEach((button) => {
+                    button.disabled = true;
+                    button.setAttribute('aria-disabled', 'true');
+                });
+                // Tidak memanggil preventDefault pada submit pertama,
+                // sehingga browser tetap mengirim form seperti biasa.
+            });
+
+            // Pulihkan tampilan bila halaman dikembalikan dari browser cache.
+            window.addEventListener('pageshow', () => {
+                isSubmitting = false;
+                overlay.classList.remove('is-visible');
+                overlay.setAttribute('aria-hidden', 'true');
+                submitButtons.forEach((button) => {
+                    button.disabled = false;
+                    button.removeAttribute('aria-disabled');
+                });
+            });
+        })();
+    </script>
 
 @endsection
