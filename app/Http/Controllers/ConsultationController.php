@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Counselor;
-use Illuminate\Http\Request;
+use App\Services\ConsultationSummaryService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -160,7 +161,6 @@ class ConsultationController extends Controller
             }
         }
 
-
         /*
          * Buat snapshot materi berdasarkan persetujuan Pencerita.
          * Snapshot tidak mengambil materi yang tidak disetujui.
@@ -226,11 +226,24 @@ class ConsultationController extends Controller
         ]);
 
 
+
+        /*
+         * Setelah konsultasi tersimpan, minta Hermes
+         * membuat ringkasan melalui workflow n8n.
+         *
+         * Kegagalan Hermes tidak membatalkan konsultasi.
+         */
+        $briefGenerated = app(ConsultationSummaryService::class)
+            ->generate($consultation);
+
+        // Berikan notifikasi sesuai hasil pemrosesan.
+        $message = $briefGenerated
+            ? 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan telah dibuat.'
+            : 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan belum berhasil dibuat.';
+
         return redirect()
             ->route('consultations.show', $consultation->id)
-            ->with(
-                'success',
-                'Permintaan konsultasi berhasil dikirim dan menunggu konfirmasi.'
-            );
+            ->with('success', $message);
+
     }
 }

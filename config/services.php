@@ -38,6 +38,9 @@ return [
     'n8n' => [
         'journal_reflection_url' => env('N8N_JOURNAL_REFLECTION_URL'),
 
+        // Webhook untuk pembuatan ringkasan konsultasi.
+        'consultation_summary_url' => env('N8N_CONSULTATION_SUMMARY_URL'),
+
         'webhook_header' => env(
             'N8N_WEBHOOK_HEADER',
             'X-TemanDengar-Token'
