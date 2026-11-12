@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConsultationController;
+use App\Http\Controllers\CounselorConsultationController;
 use App\Http\Controllers\CounselorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JournalController;
@@ -123,7 +124,7 @@ Route::middleware('auth')->group(function () {
     )
         ->whereNumber('counselor')
         ->name('consultations.store');
-        
+
     // Riwayat Konsultasi Pencerita
     Route::get('/consultations', [ConsultationController::class, 'index'])
         ->name('consultations.index');
@@ -132,4 +133,63 @@ Route::middleware('auth')->group(function () {
     Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])
         ->whereNumber('consultation')
         ->name('consultations.show');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Counselor Routes
+    |--------------------------------------------------------------------------
+    | Halaman dan tindakan khusus Konselor Sebaya.
+    */
+
+    Route::prefix('counselor')
+        ->name('counselor.')
+        ->group(function () {
+
+            // Dashboard / Inbox Konselor.
+            Route::get('/consultations', [
+                CounselorConsultationController::class,
+                'index'
+            ])->name('consultations.index');
+
+            // Detail permintaan konsultasi.
+            Route::get('/consultations/{consultation}', [
+                CounselorConsultationController::class,
+                'show'
+            ])
+                ->whereNumber('consultation')
+                ->name('consultations.show');
+
+            // Terima permintaan.
+            Route::patch('/consultations/{consultation}/accept', [
+                CounselorConsultationController::class,
+                'accept'
+            ])
+                ->whereNumber('consultation')
+                ->name('consultations.accept');
+
+            // Tolak permintaan.
+            Route::patch('/consultations/{consultation}/reject', [
+                CounselorConsultationController::class,
+                'reject'
+            ])
+                ->whereNumber('consultation')
+                ->name('consultations.reject');
+
+            // Menetapkan atau memperbarui jadwal final.
+            Route::patch('/consultations/{consultation}/schedule', [
+                CounselorConsultationController::class,
+                'schedule'
+            ])
+                ->whereNumber('consultation')
+                ->name('consultations.schedule');
+
+            // Menandai konsultasi selesai.
+            Route::patch('/consultations/{consultation}/complete', [
+                CounselorConsultationController::class,
+                'complete'
+            ])
+                ->whereNumber('consultation')
+                ->name('consultations.complete');
+        });
+
 });

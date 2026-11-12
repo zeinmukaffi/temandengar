@@ -112,15 +112,19 @@
                                 {{ \Illuminate\Support\Str::limit($item->context ?: 'Tidak ada cerita tambahan.', 130) }}
                             </p>
 
-                            <div class="border-top pt-3 mb-3">
-                                <small class="text-td-muted">
-                                    Waktu yang diinginkan
-                                </small>
-
-                                <div class="fw-semibold small">
-                                    {{ \Illuminate\Support\Carbon::parse($item->preferred_at)->format('d M Y, H:i') }}
-                                </div>
+                            <div class="text-td-muted small mb-1">
+                                {{ $item->scheduled_at ? 'Jadwal Konsultasi Final' : 'Waktu yang Diinginkan' }}
                             </div>
+
+                            <div class="fw-semibold small">
+                                {{ ($item->scheduled_at ?? $item->preferred_at)->format('d M Y, H:i') }}
+                            </div>
+
+                            @if ($item->scheduled_at)
+                                <span class="badge bg-success-subtle text-success mt-2">
+                                    Jadwal Ditetapkan
+                                </span>
+                            @endif
 
                             <a href="{{ route('consultations.show', $item->id) }}" class="btn btn-outline-td btn-sm w-100">
                                 Lihat Detail

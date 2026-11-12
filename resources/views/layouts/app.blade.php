@@ -187,6 +187,18 @@
                         </li>
                     @endif
 
+                    {{-- Navigasi Konselor Sebaya --}}
+                    @if (auth()->user()->role === 'konselor')
+                        <li class="nav-item">
+                            <a href="{{ route('counselor.consultations.index') }}"
+                                class="nav-link {{ request()->routeIs('counselor.*') ? 'active fw-semibold' : '' }}">
+
+                                Permintaan Konsultasi
+
+                            </a>
+                        </li>
+                    @endif
+
                 </ul>
 
                 {{-- Profil pengguna --}}

@@ -20,6 +20,8 @@ class Consultation extends Model
         'consent_at',
         'consultation_brief',
         'status',
+        'scheduled_at',
+        'completed_at',
     ];
 
     protected function casts(): array
@@ -29,6 +31,8 @@ class Consultation extends Model
             'share_journal' => 'boolean',
             'share_ai_reflection' => 'boolean',
             'consent_at' => 'datetime',
+            'scheduled_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
     }
 
