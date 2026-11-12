@@ -102,7 +102,7 @@
                             Catatan Tambahan dari Pencerita
                         </h6>
 
-                        <div class="bg-light rounded-3 p-3" style="white-space: pre-wrap; line-height: 1.7;">
+                        <div class="bg-light rounded-3 p-3" style=" line-height: 1.7;">
                             {{ $consultation->context }}
                         </div>
                     </div>
@@ -157,7 +157,7 @@
                             {{ $sharedJournal->title ?: 'Catatan Pribadi' }}
                         </h6>
 
-                        <div style="white-space: pre-wrap; line-height: 1.8;">
+                        <div style=" line-height: 1.8;">
                             {{ $sharedJournal->content }}
                         </div>
 
@@ -266,6 +266,52 @@
                 @endif
 
             </div>
+
+
+            {{-- Ringkasan Persiapan Konsultasi dari Hermes --}}
+            <div class="td-card consultation-compact-card">
+
+                <h5 class="fw-bold mb-3">
+                    Ringkasan Persiapan Konsultasi
+                </h5>
+
+                @if ($consultation->brief_status === 'completed' && filled($consultation->consultation_brief))
+
+                    <div style="line-height: 1.8;">
+                        {{ $consultation->consultation_brief }}
+                    </div>
+
+                    @if ($consultation->brief_generated_at)
+                        <small class="text-td-muted d-block mt-3">
+                            Dibuat pada
+                            {{ $consultation->brief_generated_at->format('d F Y, H:i') }}
+                        </small>
+                    @endif
+                @elseif (in_array($consultation->brief_status, ['pending', 'processing']))
+                    <div class="bg-light rounded-3 p-3">
+                        <p class="text-td-muted small mb-0">
+                            Ringkasan persiapan konsultasi sedang dibuat.
+                        </p>
+                    </div>
+                @elseif ($consultation->brief_status === 'failed')
+                    <div class="bg-light rounded-3 p-3">
+                        <p class="text-td-muted small mb-0">
+                            Ringkasan persiapan belum berhasil dibuat.
+                            Silakan gunakan informasi permintaan dan materi yang
+                            telah dibagikan untuk mempersiapkan konsultasi.
+                        </p>
+                    </div>
+                @else
+                    <div class="bg-light rounded-3 p-3">
+                        <p class="text-td-muted small mb-0">
+                            Ringkasan persiapan belum tersedia.
+                        </p>
+                    </div>
+
+                @endif
+
+            </div>
+
 
         </div>
 
@@ -431,9 +477,9 @@
 
     <style>
         /*
-             * Memperbaiki card yang terlalu panjang.
-             * Hanya berlaku untuk halaman detail permintaan konselor.
-             */
+                     * Memperbaiki card yang terlalu panjang.
+                     * Hanya berlaku untuk halaman detail permintaan konselor.
+                     */
         .consultation-detail-layout .consultation-compact-card {
             height: auto !important;
             min-height: 0 !important;
@@ -445,23 +491,23 @@
         }
 
         /*
-             * Jarak antarkonten dibuat lebih ringkas.
-             */
+                     * Jarak antarkonten dibuat lebih ringkas.
+                     */
         .consultation-detail-layout .consultation-compact-card {
             padding: 24px;
         }
 
         /*
-             * Membuat isi jurnal dan refleksi lebih nyaman dibaca.
-             */
+                     * Membuat isi jurnal dan refleksi lebih nyaman dibaca.
+                     */
         .consultation-detail-layout .consultation-compact-card p,
         .consultation-detail-layout .consultation-compact-card li {
             line-height: 1.7;
         }
 
         /*
-             * Sidebar keputusan tetap berada setelah profil konselor.
-             */
+                     * Sidebar keputusan tetap berada setelah profil konselor.
+                     */
         @media (min-width: 992px) {
             .consultation-detail-layout .col-lg-4 {
                 position: relative;

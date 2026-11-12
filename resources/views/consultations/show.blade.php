@@ -92,7 +92,7 @@
                                 Catatan Tambahan
                             </div>
 
-                            <div class="bg-light rounded-3 p-3" style="white-space: pre-wrap; line-height: 1.7;">
+                            <div class="bg-light rounded-3 p-3" style="line-height: 1.7;">
                                 {{ $consultation->context }}
                             </div>
                         </div>
@@ -184,7 +184,7 @@
                                 {{ $consultation->journal->title ?: 'Catatan Pribadi' }}
                             </h6>
 
-                            <div style="white-space: pre-wrap; line-height: 1.8;">{{ $consultation->journal->content }}
+                            <div style="line-height: 1.8;">{{ $consultation->journal->content }}
                             </div>
 
                         </div>
@@ -234,22 +234,6 @@
                     </p>
 
                 </div>
-
-                {{-- Ringkasan persiapan hanya ditampilkan jika sudah tersedia --}}
-                @if (filled($consultation->consultation_brief))
-                    <div class="td-card consultation-compact-card">
-
-                        <h5 class="fw-bold mb-3">
-                            Ringkasan Persiapan Konsultasi
-                        </h5>
-
-                        <div style="white-space: pre-wrap; line-height: 1.8;">
-                            {{ $consultation->consultation_brief }}
-                        </div>
-
-                    </div>
-                @endif
-
             </div>
 
             {{-- Profil konselor --}}
