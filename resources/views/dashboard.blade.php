@@ -68,24 +68,27 @@
             </div>
         </div>
 
-        {{-- Konsultasi --}}
+        {{-- Journaling --}}
         <div class="col-md-6">
             <div class="td-card">
-                <div class="feature-icon mb-3">K</div>
+                <div class="feature-icon mb-3">C</div>
 
-                <h5 class="fw-bold mb-2">Konsultasi Sebaya</h5>
+                <h5 class="fw-bold mb-2">Butuh teman untuk bercerita?</h5>
 
                 <p class="text-td-muted small mb-3">
-                    Temukan konselor sebaya dan ajukan konsultasi
-                    sesuai kebutuhanmu.
+                    Temukan konselor sebaya yang siap mendengarkan
+                    dan menemanimu membahas hal yang sedang kamu hadapi.
                 </p>
 
-                <span class="badge bg-light text-secondary">
-                    Segera Hadir
-                </span>
+                <a href="{{ route('counselors.index') }}" class="btn btn-td">
+                    Temukan Konselor
+                </a>
+                <a href="{{ route('consultations.index') }}" class="btn btn-td">
+                    Konsultasi Saya
+                </a>
+                
             </div>
         </div>
-
     </div>
 
 

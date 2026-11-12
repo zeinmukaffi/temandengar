@@ -167,6 +167,32 @@
                     Jurnal ini bersifat pribadi.
                 </div>
 
+
+                <div class="mt-4 pt-3 border-top">
+
+                    <h6 class="fw-bold mb-2">
+                        Ingin membahas cerita ini bersama seseorang?
+                    </h6>
+
+                    <p class="text-td-muted small">
+                        Temukan konselor sebaya yang bisa menemanimu.
+                        Kamu dapat menentukan sendiri apakah jurnal ini
+                        ingin dibagikan saat mengajukan konsultasi.
+                    </p>
+
+                    <a href="{{ route('counselors.index') }}" class="btn btn-td">
+
+                        Cari Konselor untuk Konsultasi
+
+                    </a>
+
+                    <a href="{{ route('consultations.index') }}" class="btn btn-link text-td-primary text-decoration-none">
+                        Lihat Konsultasi Saya
+                    </a>
+
+                </div>
+
+
             </div>
 
         </div>
