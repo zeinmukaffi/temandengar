@@ -292,10 +292,14 @@
     <div id="consultationLoading" class="td-journal-loading" aria-hidden="true">
         <div class="td-journal-loading__dialog" role="status" aria-live="polite">
             <div class="td-journal-loading__spinner"></div>
-            <h5 class="fw-bold mb-2">Mengirim Permintaan</h5>
+            <h5 class="fw-bold mb-2">
+                Mengirim Permintaan Konsultasi
+            </h5>
             <p class="text-td-muted small mb-0">
-                Permintaan konsultasimu sedang disimpan.
-                Jangan tutup halaman ini.
+                Permintaanmu sedang disimpan dan Hermes sedang
+                menyiapkan ringkasan untuk konselor.
+                Proses ini bisa memerlukan beberapa saat.
+                Jangan tutup atau refresh halaman ini.
             </p>
         </div>
     </div>
@@ -348,20 +352,36 @@
         }
     </style>
 
+
     <script>
         (() => {
             const form = document.getElementById('consultationForm');
+            const overlay = document.getElementById('consultationLoading');
 
             const shareJournal = document.getElementById('shareJournal');
             const shareAi = document.getElementById('shareAiReflection');
-
             const journalSelect = document.getElementById('journalSelect');
-            const reflectionInfo = document.getElementById('reflectionMatchInfo');
 
-            if (!form || !journalSelect || !reflectionInfo) return;
+            const reflectionInfo = document.getElementById('reflectionMatchInfo');
+            const submitButton = document.getElementById('submitConsultation');
+
+            if (
+                !form ||
+                !overlay ||
+                !shareJournal ||
+                !shareAi ||
+                !journalSelect ||
+                !reflectionInfo
+            ) return;
+
+            let isSubmitting = false;
+
+            // ========================================
+            // UPDATE FORM PERSETUJUAN BERBAGI
+            // ========================================
 
             function updateSharingForm() {
-                // Jurnal acuan diperlukan jika salah satu materi ingin dibagikan.
+                // Jurnal diperlukan jika salah satu materi ingin dibagikan.
                 const needsJournal =
                     shareJournal.checked || shareAi.checked;
 
@@ -371,6 +391,9 @@
                 updateReflectionPreview();
             }
 
+            // ========================================
+            // UPDATE PREVIEW AI REFLECTION
+            // ========================================
 
             function updateReflectionPreview() {
                 const option = journalSelect.selectedOptions[0];
@@ -382,16 +405,21 @@
                     document.getElementById('reflectionDate');
 
                 const hasJournal = Boolean(option?.value);
-                const reflectionId = option?.dataset.reflectionId || '';
-                const summary = option?.dataset.reflectionSummary || '';
-                const date = option?.dataset.reflectionDate || '';
+
+                const reflectionId =
+                    option?.dataset.reflectionId || '';
+
+                const summary =
+                    option?.dataset.reflectionSummary || '';
+
+                const date =
+                    option?.dataset.reflectionDate || '';
 
                 const hasReflection = Boolean(
                     reflectionId && summary.trim()
                 );
 
-                // Refleksi hanya bisa dibagikan jika jurnal terpilih
-                // memiliki refleksi AI yang sudah completed.
+                // AI Reflection hanya bisa dibagikan jika tersedia.
                 shareAi.disabled = !hasReflection;
 
                 if (!hasReflection) {
@@ -402,27 +430,52 @@
                         'Pilih jurnal untuk melihat ringkasan refleksi AI.';
 
                     dateElement.textContent = '';
+
                     return;
                 }
 
-                // Tampilkan ringkasan AI dari jurnal yang dipilih.
-                // textContent digunakan agar isi AI tidak diperlakukan sebagai HTML.
                 summaryElement.textContent = summary;
+
                 dateElement.textContent = date ?
                     `Dibuat ${date}` :
                     '';
             }
 
+            // ========================================
+            // EVENT PERUBAHAN PERSETUJUAN
+            // ========================================
 
-            shareJournal.addEventListener('change', updateSharingForm);
-            shareAi.addEventListener('change', updateSharingForm);
+            shareJournal.addEventListener(
+                'change',
+                updateSharingForm
+            );
 
-            journalSelect.addEventListener('change', updateReflectionPreview);
+            shareAi.addEventListener(
+                'change',
+                updateSharingForm
+            );
 
+            journalSelect.addEventListener(
+                'change',
+                updateReflectionPreview
+            );
+
+            // Atur kondisi awal form.
             updateSharingForm();
 
-            // Validasi terakhir sebelum submit.
+            // ========================================
+            // SUBMIT FORM DAN LOADING OVERLAY
+            // ========================================
+
             form.addEventListener('submit', (event) => {
+
+                // Cegah pengiriman berulang.
+                if (isSubmitting) {
+                    event.preventDefault();
+                    return;
+                }
+
+                // Validasi jurnal acuan.
                 if (
                     (shareJournal.checked || shareAi.checked) &&
                     !journalSelect.value
@@ -430,11 +483,13 @@
                     event.preventDefault();
 
                     alert('Pilih jurnal acuan terlebih dahulu.');
+
                     journalSelect.focus();
 
                     return;
                 }
 
+                // Pastikan AI Reflection tersedia.
                 if (shareAi.checked) {
                     const option = journalSelect.selectedOptions[0];
 
@@ -445,11 +500,62 @@
                             'Jurnal yang dipilih belum memiliki refleksi AI yang selesai.'
                         );
 
+                        journalSelect.focus();
+
                         return;
                     }
                 }
+
+                /*
+                 * Semua validasi lolos.
+                 * Tampilkan loading sebelum browser mengirim form.
+                 */
+
+                isSubmitting = true;
+
+                overlay.classList.add('is-visible');
+
+                overlay.setAttribute('aria-hidden', 'false');
+
+                // Nonaktifkan tombol agar tidak diklik berulang.
+                if (submitButton) {
+                    submitButton.disabled = true;
+
+                    submitButton.setAttribute(
+                        'aria-disabled',
+                        'true'
+                    );
+
+                    submitButton.textContent = 'Mengirim...';
+                }
+
+                // Tidak menggunakan preventDefault.
+                // Form tetap dikirim secara normal ke Laravel.
             });
+
+            // ========================================
+            // RESET SAAT HALAMAN DARI BROWSER CACHE
+            // ========================================
+
+            window.addEventListener('pageshow', () => {
+
+                isSubmitting = false;
+
+                overlay.classList.remove('is-visible');
+
+                overlay.setAttribute('aria-hidden', 'true');
+
+                if (submitButton) {
+                    submitButton.disabled = false;
+
+                    submitButton.removeAttribute('aria-disabled');
+
+                    submitButton.textContent = 'Kirim Permintaan';
+                }
+            });
+
         })();
     </script>
+
 
 @endsection

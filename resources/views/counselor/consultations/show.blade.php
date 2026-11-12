@@ -57,13 +57,6 @@
 
     </div>
 
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     @if ($errors->has('status'))
         <div class="alert alert-warning alert-dismissible fade show">
             {{ $errors->first('status') }}
@@ -379,12 +372,6 @@
                         Permintaan sudah diterima. Tetapkan waktu final
                         agar Pencerita dapat melihat jadwal yang disepakati.
                     </p>
-
-                    @if (session('success'))
-                        <div class="alert alert-success small">
-                            {{ session('success') }}
-                        </div>
-                    @endif
 
                     @if ($consultation->scheduled_at)
                         <div class="bg-td-soft rounded-3 p-3 mb-3">
