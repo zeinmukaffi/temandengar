@@ -39,6 +39,9 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        $user->role = 'pencerita';
+        $user->save();
+
         // Login otomatis setelah registrasi berhasil.
         Auth::login($user);
 

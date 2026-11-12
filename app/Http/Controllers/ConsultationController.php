@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Counselor;
-use Illuminate\Http\Request;
+use App\Services\ConsultationSummaryService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -160,6 +161,37 @@ class ConsultationController extends Controller
             }
         }
 
+        /*
+         * Buat snapshot materi berdasarkan persetujuan Pencerita.
+         * Snapshot tidak mengambil materi yang tidak disetujui.
+         */
+
+        $sharedJournalSnapshot = null;
+        $sharedAiReflectionSnapshot = null;
+
+        // Snapshot jurnal hanya jika Pencerita menyetujuinya.
+        if ($shareJournal && $selectedJournal) {
+            $sharedJournalSnapshot = [
+                'title' => $selectedJournal->title,
+                'entry_type' => $selectedJournal->entry_type,
+                'content' => $selectedJournal->content,
+                'journaled_at' => $selectedJournal->journaled_at?->toISOString(),
+            ];
+        }
+
+        // Snapshot AI Reflection terpisah dari snapshot jurnal.
+        if ($shareAiReflection && $selectedReflection) {
+            $sharedAiReflectionSnapshot = [
+                'summary' => $selectedReflection->summary,
+                'emotional_insight' => $selectedReflection->emotional_insight,
+                'key_concerns' => $selectedReflection->key_concerns ?? [],
+                'reflection_questions' => $selectedReflection->reflection_questions ?? [],
+                'suggested_steps' => $selectedReflection->suggested_steps ?? [],
+                'ai_model' => $selectedReflection->ai_model,
+            ];
+        }
+
+
         // Simpan permintaan konsultasi.
         $consultation = $user->consultations()->create([
             'counselor_id' => $counselor->id,
@@ -185,15 +217,33 @@ class ConsultationController extends Controller
                 ? now()
                 : null,
 
+            // Simpan snapshot materi yang telah disetujui.
+            'shared_journal_snapshot' => $sharedJournalSnapshot,
+            'shared_ai_reflection_snapshot' => $sharedAiReflectionSnapshot,
+
             'consultation_brief' => null,
             'status' => 'pending_confirmation',
         ]);
 
+
+
+        /*
+         * Setelah konsultasi tersimpan, minta Hermes
+         * membuat ringkasan melalui workflow n8n.
+         *
+         * Kegagalan Hermes tidak membatalkan konsultasi.
+         */
+        $briefGenerated = app(ConsultationSummaryService::class)
+            ->generate($consultation);
+
+        // Berikan notifikasi sesuai hasil pemrosesan.
+        $message = $briefGenerated
+            ? 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan telah dibuat.'
+            : 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan belum berhasil dibuat.';
+
         return redirect()
             ->route('consultations.show', $consultation->id)
-            ->with(
-                'success',
-                'Permintaan konsultasi berhasil dikirim dan menunggu konfirmasi.'
-            );
+            ->with('success', $message);
+
     }
 }

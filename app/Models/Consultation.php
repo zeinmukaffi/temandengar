@@ -12,27 +12,46 @@ class Consultation extends Model
         'counselor_id',
         'journal_id',
         'ai_reflection_id',
+
         'topic',
         'context',
         'preferred_at',
+
+        'scheduled_at',
+        'completed_at',
+
         'share_journal',
         'share_ai_reflection',
         'consent_at',
+
+        // Snapshot materi yang diizinkan untuk dibagikan.
+        'shared_journal_snapshot',
+        'shared_ai_reflection_snapshot',
+
+        // Pemrosesan ringkasan Hermes.
         'consultation_brief',
+        'brief_status',
+        'brief_error',
+        'brief_generated_at',
+
         'status',
-        'scheduled_at',
-        'completed_at',
     ];
 
     protected function casts(): array
     {
         return [
             'preferred_at' => 'datetime',
+            'scheduled_at' => 'datetime',
+            'completed_at' => 'datetime',
+
             'share_journal' => 'boolean',
             'share_ai_reflection' => 'boolean',
             'consent_at' => 'datetime',
-            'scheduled_at' => 'datetime',
-            'completed_at' => 'datetime',
+
+            'shared_journal_snapshot' => 'array',
+            'shared_ai_reflection_snapshot' => 'array',
+
+            'brief_generated_at' => 'datetime',
         ];
     }
 
