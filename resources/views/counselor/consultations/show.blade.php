@@ -315,15 +315,15 @@
 
                         <form id="briefRetryForm"
                             action="{{ route('counselor.consultations.brief.retry', $consultation->id) }}" method="POST"
-                            onsubmit="return confirm('Apakah kamu ingin mencoba membuat ulang ringkasan konsultasi?')">
-
+                            data-confirm="Apakah kamu ingin mencoba membuat ulang ringkasan konsultasi?"
+                            data-confirm-title="Buat Ulang Ringkasan?" data-confirm-button="Ya, Buat Ulang"
+                            data-confirm-variant="primary">
                             @csrf
                             @method('PATCH')
 
                             <button type="submit" id="retryBriefButton" class="btn btn-outline-primary w-100">
                                 Coba Buat Ulang Ringkasan
                             </button>
-
                         </form>
 
                     </div>
@@ -371,28 +371,27 @@
                     </p>
 
                     <form action="{{ route('counselor.consultations.accept', $consultation->id) }}" method="POST"
-                        class="mb-3"
-                        onsubmit="return confirm('Apakah kamu yakin ingin menerima permintaan konsultasi ini?')">
-
+                        class="mb-3" data-confirm="Apakah kamu yakin ingin menerima permintaan konsultasi ini?"
+                        data-confirm-title="Terima Permintaan?" data-confirm-button="Ya, Terima"
+                        data-confirm-variant="success">
                         @csrf
                         @method('PATCH')
 
                         <button type="submit" class="btn btn-td w-100">
                             Terima Permintaan
                         </button>
-
                     </form>
 
                     <form action="{{ route('counselor.consultations.reject', $consultation->id) }}" method="POST"
-                        onsubmit="return confirm('Apakah kamu yakin ingin menolak permintaan konsultasi ini?')">
-
+                        data-confirm="Apakah kamu yakin ingin menolak permintaan konsultasi ini?"
+                        data-confirm-title="Tolak Permintaan?" data-confirm-button="Ya, Tolak"
+                        data-confirm-variant="danger">
                         @csrf
                         @method('PATCH')
 
                         <button type="submit" class="btn btn-outline-danger w-100">
                             Tolak Permintaan
                         </button>
-
                     </form>
 
                 </div>
@@ -465,15 +464,15 @@
                         </p>
 
                         <form action="{{ route('counselor.consultations.complete', $consultation->id) }}" method="POST"
-                            onsubmit="return confirm('Pastikan sesi konsultasi sudah selesai. Lanjutkan?')">
-
+                            data-confirm="Pastikan sesi konsultasi sudah benar-benar selesai. Lanjutkan?"
+                            data-confirm-title="Selesaikan Konsultasi?" data-confirm-button="Ya, Selesaikan"
+                            data-confirm-variant="success">
                             @csrf
                             @method('PATCH')
 
                             <button type="submit" class="btn btn-success w-100">
                                 Tandai Selesai
                             </button>
-
                         </form>
                     @endif
 
@@ -516,9 +515,9 @@
 
     <style>
         /*
-                                                         * Memperbaiki card yang terlalu panjang.
-                                                         * Hanya berlaku untuk halaman detail permintaan konselor.
-                                                         */
+                                                                         * Memperbaiki card yang terlalu panjang.
+                                                                         * Hanya berlaku untuk halaman detail permintaan konselor.
+                                                                         */
         .consultation-detail-layout .consultation-compact-card {
             height: auto !important;
             min-height: 0 !important;
@@ -530,23 +529,23 @@
         }
 
         /*
-                                                         * Jarak antarkonten dibuat lebih ringkas.
-                                                         */
+                                                                         * Jarak antarkonten dibuat lebih ringkas.
+                                                                         */
         .consultation-detail-layout .consultation-compact-card {
             padding: 24px;
         }
 
         /*
-                                                         * Membuat isi jurnal dan refleksi lebih nyaman dibaca.
-                                                         */
+                                                                         * Membuat isi jurnal dan refleksi lebih nyaman dibaca.
+                                                                         */
         .consultation-detail-layout .consultation-compact-card p,
         .consultation-detail-layout .consultation-compact-card li {
             line-height: 1.7;
         }
 
         /*
-                                                         * Sidebar keputusan tetap berada setelah profil konselor.
-                                                         */
+                                                                         * Sidebar keputusan tetap berada setelah profil konselor.
+                                                                         */
         @media (min-width: 992px) {
             .consultation-detail-layout .col-lg-4 {
                 position: relative;

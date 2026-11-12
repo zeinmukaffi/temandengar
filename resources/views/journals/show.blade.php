@@ -126,7 +126,9 @@
 
                             <li>
                                 <form action="{{ route('journals.destroy', $journal->id) }}" method="POST"
-                                    onsubmit="return confirm('Apakah kamu yakin ingin menghapus jurnal ini?')">
+                                    data-confirm="Apakah kamu yakin ingin menghapus jurnal ini? Jurnal yang dihapus tidak dapat dikembalikan."
+                                    data-confirm-title="Hapus Jurnal?" data-confirm-button="Ya, Hapus"
+                                    data-confirm-variant="danger">
                                     @csrf
                                     @method('DELETE')
 
