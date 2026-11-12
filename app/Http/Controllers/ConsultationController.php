@@ -160,6 +160,38 @@ class ConsultationController extends Controller
             }
         }
 
+
+        /*
+         * Buat snapshot materi berdasarkan persetujuan Pencerita.
+         * Snapshot tidak mengambil materi yang tidak disetujui.
+         */
+
+        $sharedJournalSnapshot = null;
+        $sharedAiReflectionSnapshot = null;
+
+        // Snapshot jurnal hanya jika Pencerita menyetujuinya.
+        if ($shareJournal && $selectedJournal) {
+            $sharedJournalSnapshot = [
+                'title' => $selectedJournal->title,
+                'entry_type' => $selectedJournal->entry_type,
+                'content' => $selectedJournal->content,
+                'journaled_at' => $selectedJournal->journaled_at?->toISOString(),
+            ];
+        }
+
+        // Snapshot AI Reflection terpisah dari snapshot jurnal.
+        if ($shareAiReflection && $selectedReflection) {
+            $sharedAiReflectionSnapshot = [
+                'summary' => $selectedReflection->summary,
+                'emotional_insight' => $selectedReflection->emotional_insight,
+                'key_concerns' => $selectedReflection->key_concerns ?? [],
+                'reflection_questions' => $selectedReflection->reflection_questions ?? [],
+                'suggested_steps' => $selectedReflection->suggested_steps ?? [],
+                'ai_model' => $selectedReflection->ai_model,
+            ];
+        }
+
+
         // Simpan permintaan konsultasi.
         $consultation = $user->consultations()->create([
             'counselor_id' => $counselor->id,
@@ -185,9 +217,14 @@ class ConsultationController extends Controller
                 ? now()
                 : null,
 
+            // Simpan snapshot materi yang telah disetujui.
+            'shared_journal_snapshot' => $sharedJournalSnapshot,
+            'shared_ai_reflection_snapshot' => $sharedAiReflectionSnapshot,
+
             'consultation_brief' => null,
             'status' => 'pending_confirmation',
         ]);
+
 
         return redirect()
             ->route('consultations.show', $consultation->id)
