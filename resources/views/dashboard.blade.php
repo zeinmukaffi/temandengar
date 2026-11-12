@@ -83,6 +83,10 @@
                 <a href="{{ route('counselors.index') }}" class="btn btn-td">
                     Temukan Konselor
                 </a>
+                <a href="{{ route('consultations.index') }}" class="btn btn-td">
+                    Konsultasi Saya
+                </a>
+                
             </div>
         </div>
     </div>

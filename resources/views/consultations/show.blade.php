@@ -1,87 +1,245 @@
 @extends('layouts.app')
 
-@section('title', 'Profil Konselor')
+@section('title', 'Detail Konsultasi')
 
 @section('content')
+
+    @php
+        $statusLabels = [
+            'pending_confirmation' => [
+                'label' => 'Menunggu Konfirmasi',
+                'class' => 'warning',
+                'description' => 'Permintaan konsultasimu sedang menunggu tanggapan konselor.',
+            ],
+            'accepted' => [
+                'label' => 'Diterima',
+                'class' => 'success',
+                'description' => 'Konselor telah menerima permintaan konsultasimu.',
+            ],
+            'rejected' => [
+                'label' => 'Ditolak',
+                'class' => 'danger',
+                'description' => 'Permintaan konsultasi ini belum dapat diterima.',
+            ],
+            'completed' => [
+                'label' => 'Selesai',
+                'class' => 'primary',
+                'description' => 'Konsultasi ini telah selesai.',
+            ],
+            'cancelled' => [
+                'label' => 'Dibatalkan',
+                'class' => 'secondary',
+                'description' => 'Permintaan konsultasi ini telah dibatalkan.',
+            ],
+        ];
+
+        $status = $statusLabels[$consultation->status] ?? [
+            'label' => ucfirst($consultation->status),
+            'class' => 'secondary',
+            'description' => 'Status konsultasi sedang diperbarui.',
+        ];
+    @endphp
+
     <div class="mb-4">
-        <a href="{{ route('counselors.index') }}" class="text-td-primary text-decoration-none small">
-            &larr; Kembali ke Direktori Konselor
+        <a href="{{ route('consultations.index') }}" class="text-td-primary text-decoration-none small">
+            &larr; Kembali ke Konsultasi Saya
         </a>
+
+        <h3 class="fw-bold mt-3 mb-1">Detail Konsultasi</h3>
+
+        <p class="text-td-muted small mb-0">
+            Informasi permintaan konsultasimu.
+        </p>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="td-card">
-                <div class="d-flex flex-wrap align-items-start gap-3 mb-4">
-                    @if ($counselor->photo_path)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url($counselor->photo_path) }}"
-                            alt="Foto {{ $counselor->name }}" class="rounded-circle"
-                            style="width:104px;height:104px;object-fit:cover;">
-                    @else
-                        <div class="feature-icon rounded-circle d-flex align-items-center justify-content-center"
-                            style="width:104px;height:104px;font-size:2rem;">
-                            {{ mb_strtoupper(mb_substr($counselor->name, 0, 1)) }}
-                        </div>
-                    @endif
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
 
-                    <div class="flex-grow-1">
-                        <span class="badge bg-success-subtle text-success mb-2">Tersedia untuk konsultasi</span>
-                        <h3 class="fw-bold mb-1">{{ $counselor->name }}</h3>
-                        <p class="text-td-muted mb-0">{{ $counselor->role }}</p>
+    <div class="row g-4">
+
+        {{-- Informasi permintaan --}}
+        <div class="col-lg-8">
+
+            <div class="td-card mb-4">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+
+                    <h5 class="fw-bold mb-0">
+                        {{ $consultation->topic }}
+                    </h5>
+
+                    <span class="badge bg-{{ $status['class'] }}-subtle text-{{ $status['class'] }}">
+                        {{ $status['label'] }}
+                    </span>
+
+                </div>
+
+                <div class="bg-td-soft rounded-3 p-3 mb-4">
+                    <p class="small mb-0">
+                        {{ $status['description'] }}
+                    </p>
+                </div>
+
+                <div class="mb-4">
+                    <div class="text-td-muted small mb-1">
+                        Cerita atau alasan konsultasi
+                    </div>
+
+                    <div style="white-space: pre-wrap; line-height: 1.8;">
+                        {{ $consultation->context ?: 'Tidak ada cerita tambahan.' }}</div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <div class="text-td-muted small mb-1">
+                        Waktu yang diinginkan
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ \Illuminate\Support\Carbon::parse($consultation->preferred_at)->format('d F Y, H:i') }}
+                    </div>
+
+                    <small class="text-td-muted">
+                        Waktu tersebut merupakan preferensi awal, bukan jadwal yang telah dikonfirmasi.
+                    </small>
+                </div>
+
+                <div class="border-top pt-3 mt-3">
+                    <div class="text-td-muted small mb-1">
+                        Permintaan dibuat
+                    </div>
+
+                    <div class="fw-semibold">
+                        {{ $consultation->created_at->format('d F Y, H:i') }}
                     </div>
                 </div>
 
-                <hr class="my-4">
-
-                <section class="mb-4">
-                    <h5 class="fw-bold mb-2">Tentang Konselor</h5>
-                    <p class="text-td-muted mb-0" style="white-space:pre-line;line-height:1.8;">
-                        {{ $counselor->bio ?: 'Belum ada deskripsi profil.' }}
-                    </p>
-                </section>
-
-                <section class="mb-4">
-                    <h5 class="fw-bold mb-2">Bidang Pendampingan</h5>
-                    @if (!empty($counselor->specialties))
-                        <div class="d-flex flex-wrap gap-2">
-                            @foreach ($counselor->specialties as $specialty)
-                                <span class="badge bg-td-soft text-td-primary px-3 py-2">{{ $specialty }}</span>
-                            @endforeach
-                        </div>
-                    @else
-                        <p class="text-td-muted small mb-0">Belum ada bidang pendampingan yang dicantumkan.</p>
-                    @endif
-                </section>
-
-                <section>
-                    <h5 class="fw-bold mb-2">Informasi Ketersediaan</h5>
-                    <p class="text-td-muted mb-0">
-                        {{ $counselor->availability_description ?: 'Konselor tersedia. Waktu konsultasi akan dikonfirmasi setelah pengajuan.' }}
-                    </p>
-                </section>
             </div>
-        </div>
 
-        <div class="col-lg-4">
+            {{-- Informasi materi yang dibagikan --}}
+            <div class="td-card mb-4">
+
+                <h5 class="fw-bold mb-2">Informasi yang Dibagikan</h5>
+
+                <p class="text-td-muted small mb-4">
+                    Materi yang tercantum di sini adalah informasi
+                    yang secara eksplisit kamu setujui untuk dibagikan.
+                </p>
+
+                @if ($consultation->share_journal && $consultation->journal)
+                    <div class="border rounded-3 p-3 mb-3">
+
+                        <span class="badge bg-success-subtle text-success mb-2">
+                            Jurnal Disetujui
+                        </span>
+
+                        <h6 class="fw-bold">
+                            {{ $consultation->journal->title ?: 'Catatan Pribadi' }}
+                        </h6>
+
+                        <div style="white-space: pre-wrap; line-height: 1.8;">{{ $consultation->journal->content }}</div>
+
+                    </div>
+                @else
+                    <div class="border rounded-3 p-3 mb-3">
+                        <p class="small text-td-muted mb-0">
+                            Jurnal tidak dibagikan.
+                        </p>
+                    </div>
+                @endif
+
+                @if ($consultation->share_ai_reflection && $consultation->aiReflection)
+
+                    <div class="border rounded-3 p-3">
+
+                        <span class="badge bg-success-subtle text-success mb-3">
+                            Refleksi AI Disetujui
+                        </span>
+
+                        @if ($consultation->aiReflection->summary)
+                            <h6 class="fw-bold small">Ringkasan Cerita</h6>
+                            <p class="small">
+                                {{ $consultation->aiReflection->summary }}
+                            </p>
+                        @endif
+
+                        @if ($consultation->aiReflection->emotional_insight)
+                            <h6 class="fw-bold small">Insight Emosional</h6>
+                            <p class="small mb-0">
+                                {{ $consultation->aiReflection->emotional_insight }}
+                            </p>
+                        @endif
+
+                    </div>
+                @else
+                    <div class="border rounded-3 p-3">
+                        <p class="small text-td-muted mb-0">
+                            Refleksi AI tidak dibagikan.
+                        </p>
+                    </div>
+
+                @endif
+
+                <p class="text-td-muted small mt-3 mb-0">
+                    Persetujuan berbagi materi pada permintaan ini tidak
+                    mengubah pengaturan privasi jurnal aslimu.
+                </p>
+
+            </div>
+
+            {{-- Ringkasan konsultasi dari Hermes --}}
             <div class="td-card">
-                <div class="feature-icon mb-3">K</div>
-                <h5 class="fw-bold mb-2">Merasa cocok untuk bercerita?</h5>
-                <p class="text-td-muted small mb-3">
-                    Kamu dapat memilih konselor ini sebagai pendamping. Sebelum pengajuan dikirim,
-                    kamu akan menentukan informasi apa yang ingin dibagikan.
-                </p>
-                <div class="bg-td-soft rounded-3 p-3 mb-3">
-                    <p class="small text-td-primary mb-0">
-                        Jurnal dan refleksi AI tetap pribadi sampai kamu memberikan persetujuan untuk membagikannya.
+
+                <h5 class="fw-bold mb-2">Ringkasan Persiapan Konsultasi</h5>
+
+                @if ($consultation->consultation_brief)
+                    <div style="white-space: pre-wrap; line-height: 1.8;">
+                        {{ $consultation->consultation_brief }}
+                    </div>
+                @else
+                    <p class="text-td-muted small mb-0">
+                        Ringkasan persiapan konsultasi belum dibuat.
+                        Hasil ini akan tersedia setelah integrasi
+                        Consultation Summary dengan Hermes diaktifkan.
                     </p>
-                </div>
-                <button type="button" class="btn btn-td w-100" disabled>
-                    Pengajuan Konsultasi Segera Tersedia
-                </button>
-                <p class="text-td-muted text-center mt-2 mb-0" style="font-size:11px;">
-                    Form pengajuan sedang dalam tahap pengembangan.
-                </p>
+                @endif
+
             </div>
+
         </div>
+
+        {{-- Profil konselor --}}
+        <div class="col-lg-4">
+
+            <div class="td-card">
+
+                <div class="feature-icon mb-3">K</div>
+
+                <h5 class="fw-bold mb-1">
+                    {{ $consultation->counselor?->name ?? 'Konselor' }}
+                </h5>
+
+                <p class="text-td-muted small">
+                    {{ $consultation->counselor?->role ?? 'Konselor Sebaya' }}
+                </p>
+
+                @if ($consultation->counselor?->bio)
+                    <p class="small">
+                        {{ $consultation->counselor->bio }}
+                    </p>
+                @endif
+
+                <a href="{{ route('counselors.show', $consultation->counselor_id) }}" class="btn btn-outline-td w-100">
+                    Lihat Profil Konselor
+                </a>
+
+            </div>
+
+        </div>
+
     </div>
+
 @endsection

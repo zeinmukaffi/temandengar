@@ -123,5 +123,13 @@ Route::middleware('auth')->group(function () {
     )
         ->whereNumber('counselor')
         ->name('consultations.store');
+        
+    // Riwayat Konsultasi Pencerita
+    Route::get('/consultations', [ConsultationController::class, 'index'])
+        ->name('consultations.index');
 
+    // Detail Konsultasi
+    Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])
+        ->whereNumber('consultation')
+        ->name('consultations.show');
 });

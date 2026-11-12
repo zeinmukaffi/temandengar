@@ -10,6 +10,38 @@ use Illuminate\View\View;
 
 class ConsultationController extends Controller
 {
+    public function index(Request $request): View
+    {
+        $user = $request->user();
+
+        abort_unless($user->role === 'pencerita', 403);
+
+        $consultations = $user->consultations()
+            ->with('counselor')
+            ->latest('created_at')
+            ->paginate(10);
+
+        return view('consultations.index', compact('consultations'));
+    }
+
+    public function show(Request $request, int $consultation): View
+    {
+        $user = $request->user();
+
+        abort_unless($user->role === 'pencerita', 403);
+
+        // Ambil konsultasi melalui relasi user agar
+        // pengguna tidak bisa membuka konsultasi orang lain.
+        $consultation = $user->consultations()
+            ->with([
+                'counselor',
+                'journal',
+                'aiReflection',
+            ])
+            ->findOrFail($consultation);
+
+        return view('consultations.show', compact('consultation'));
+    }
     /**
      * Menampilkan form pengajuan konsultasi.
      */
@@ -158,7 +190,7 @@ class ConsultationController extends Controller
         ]);
 
         return redirect()
-            ->route('counselors.show', $consultation->id)
+            ->route('consultations.show', $consultation->id)
             ->with(
                 'success',
                 'Permintaan konsultasi berhasil dikirim dan menunggu konfirmasi.'

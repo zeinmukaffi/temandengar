@@ -186,6 +186,10 @@
 
                     </a>
 
+                    <a href="{{ route('consultations.index') }}" class="btn btn-link text-td-primary text-decoration-none">
+                        Lihat Konsultasi Saya
+                    </a>
+
                 </div>
 
 

@@ -78,9 +78,6 @@
                 <a href="{{ route('consultations.create', $counselor->id) }}" class="btn btn-td w-100">
                     Ajukan Konsultasi
                 </a>
-                <p class="text-td-muted text-center mt-2 mb-0" style="font-size:11px;">
-                    Form pengajuan sedang dalam tahap pengembangan.
-                </p>
             </div>
         </div>
     </div>

@@ -178,6 +178,15 @@
                         </li>
                     @endif
 
+                    @if (auth()->user()->role === 'pencerita')
+                        <li class="nav-item">
+                            <a href="{{ route('consultations.index') }}"
+                                class="nav-link {{ request()->routeIs('consultations.*') ? 'active fw-semibold' : '' }}">
+                                Konsultasi Saya
+                            </a>
+                        </li>
+                    @endif
+
                 </ul>
 
                 {{-- Profil pengguna --}}
