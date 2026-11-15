@@ -5,53 +5,55 @@
 @section('content')
 
     <div class="mb-4">
-        <a href="{{ route('counselors.show', $counselor->id) }}" class="text-td-primary text-decoration-none small">
-            &larr; Kembali ke Profil Konselor
+        <a href="{{ route('counselors.show', $counselor->id) }}" class="td-back-link text-decoration-none">
+            <span aria-hidden="true">&larr;</span>
+            Kembali ke Profil Konselor
         </a>
 
-        <h3 class="fw-bold mt-3 mb-1">Ajukan Konsultasi</h3>
-
-        <p class="text-td-muted mb-0">
-            Ceritakan kebutuhanmu dan tentukan informasi yang ingin kamu bagikan.
-        </p>
+        <div class="mt-3">
+            <span class="td-section-eyebrow">PENGAJUAN SESI</span>
+            <h3 class="fw-bold mt-1 mb-1">Ajukan Konsultasi</h3>
+            <p class="text-td-muted mb-0">
+                Ceritakan kebutuhanmu dan tentukan informasi yang ingin kamu bagikan.
+            </p>
+        </div>
     </div>
 
     <div class="row g-4">
 
-        {{-- Form pengajuan --}}
+        {{-- Kolom Kiri: Form Pengajuan --}}
         <div class="col-lg-8">
+            <div class="td-card td-writing-card">
 
-            <div class="td-card">
+                {{-- Banner Konselor Terpilih --}}
+                <div class="td-counselor-mini-banner mb-4">
+                    @if ($counselor->photo_path)
+                        <img src="{{ asset('storage/' . $counselor->photo_path) }}" alt="{{ $counselor->name }}"
+                            class="td-counselor-avatar" style="width: 58px; height: 58px;">
+                    @else
+                        <div class="td-counselor-initials" style="width: 58px; height: 58px; font-size: 1.25rem;"
+                            aria-hidden="true">
+                            {{ strtoupper(substr($counselor->name, 0, 1)) }}
+                        </div>
+                    @endif
 
-                {{-- Profil konselor yang dipilih --}}
-                <div class="bg-td-soft rounded-3 p-3 mb-4">
-                    <div class="d-flex align-items-center gap-3">
-
-                        @if ($counselor->photo_path)
-                            <img src="{{ asset('storage/' . $counselor->photo_path) }}" alt="{{ $counselor->name }}"
-                                class="rounded-circle" width="64" height="64" style="object-fit: cover;">
-                        @else
-                            <div class="feature-icon rounded-circle">
-                                {{ strtoupper(substr($counselor->name, 0, 1)) }}
-                            </div>
-                        @endif
-
-                        <div>
-                            <div class="fw-bold">{{ $counselor->name }}</div>
-                            <div class="text-td-muted small">{{ $counselor->role }}</div>
-                            <span class="badge bg-success-subtle text-success mt-1">
+                    <div class="flex-grow-1">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <span class="fw-bold text-td-primary">{{ $counselor->name }}</span>
+                            <span class="td-status-pill td-status-pill--success" style="padding: 2px 9px;">
                                 Tersedia
                             </span>
                         </div>
-
+                        <div class="text-td-muted small text-capitalize">
+                            Konselor Sebaya • {{ $counselor->role }}
+                        </div>
                     </div>
                 </div>
 
                 <form id="consultationForm" action="{{ route('consultations.store', $counselor->id) }}" method="POST">
-
                     @csrf
 
-                    {{-- Topik konsultasi --}}
+                    {{-- Topik Konsultasi --}}
                     <div class="mb-4">
                         <label for="topic" class="form-label fw-semibold">
                             Topik Konsultasi
@@ -59,7 +61,6 @@
 
                         <select name="topic" id="topic" class="form-select @error('topic') is-invalid @enderror"
                             required>
-
                             <option value="">Pilih topik yang ingin dibahas</option>
 
                             @foreach (['Akademik', 'Manajemen Waktu', 'Relasi Pertemanan', 'Keluarga', 'Pengembangan Diri', 'Karier', 'Lainnya'] as $topic)
@@ -67,7 +68,6 @@
                                     {{ $topic }}
                                 </option>
                             @endforeach
-
                         </select>
 
                         @error('topic')
@@ -75,14 +75,14 @@
                         @enderror
                     </div>
 
-                    {{-- Konteks konsultasi --}}
+                    {{-- Konteks Konsultasi --}}
                     <div class="mb-4">
                         <label for="context" class="form-label fw-semibold">
                             Apa yang ingin kamu ceritakan?
                             <span class="text-td-muted fw-normal">(Opsional)</span>
                         </label>
 
-                        <textarea name="context" id="context" rows="6" maxlength="10000"
+                        <textarea name="context" id="context" rows="5" maxlength="10000"
                             class="form-control @error('context') is-invalid @enderror"
                             placeholder="Ceritakan secara singkat hal yang ingin kamu bahas bersama konselor...">{{ old('context') }}</textarea>
 
@@ -95,7 +95,7 @@
                         </div>
                     </div>
 
-                    {{-- Waktu konsultasi --}}
+                    {{-- Waktu Konsultasi --}}
                     <div class="mb-4">
                         <label for="preferred_at" class="form-label fw-semibold">
                             Waktu Konsultasi yang Diinginkan
@@ -110,42 +110,41 @@
                         @enderror
 
                         <div class="text-td-muted small mt-1">
-                            Waktu ini merupakan preferensi awal dan belum menjadi jadwal final.
+                            Waktu ini merupakan preferensi awal dan akan dikonfirmasi kembali oleh konselor.
                         </div>
                     </div>
 
                     <hr class="my-4">
 
+                    {{-- Persetujuan Berbagi Materi --}}
+                    <div class="mb-3">
+                        <span class="td-section-eyebrow mb-1">KENDALI PRIVASI</span>
+                        <h5 class="fw-bold mb-1">Informasi yang Ingin Dibagikan</h5>
+                        <p class="text-td-muted small mb-0">
+                            Pilih jurnal sebagai sumber materi konsultasi. Persetujuan berbagi jurnal
+                            dan refleksi AI dapat ditentukan secara terpisah.
+                        </p>
+                    </div>
 
-                    {{-- Persetujuan berbagi materi --}}
-                    <h5 class="fw-bold mb-2">Informasi yang Ingin Dibagikan</h5>
-
-                    <p class="text-td-muted small mb-3">
-                        Pilih jurnal sebagai sumber materi konsultasi.
-                        Persetujuan berbagi jurnal dan refleksi AI dapat ditentukan secara terpisah.
-                    </p>
-
-                    {{-- Izin berbagi jurnal --}}
-                    <div class="border rounded-3 p-3 mb-3">
-
+                    {{-- Izin Berbagi Jurnal --}}
+                    <div class="td-consent-box mb-3">
                         <div class="form-check">
                             <input type="checkbox" name="share_journal" value="1" id="shareJournal"
                                 class="form-check-input" {{ old('share_journal') ? 'checked' : '' }}>
 
                             <label for="shareJournal" class="form-check-label fw-semibold">
-                                Bagikan Jurnal
+                                Bagikan Jurnal Pribadi
                             </label>
                         </div>
 
-                        <p class="text-td-muted small mt-1 mb-0">
-                            Izinkan konselor membaca isi jurnal yang kamu pilih.
+                        <p class="text-td-muted small mt-1 mb-0 ps-4">
+                            Izinkan konselor membaca isi jurnal yang kamu pilih di bawah ini.
                         </p>
-
                     </div>
 
-                    <div class="border rounded-3 p-3 mb-3">
-
-                        <label for="journalSelect" class="form-label fw-semibold">
+                    {{-- Pilihan Jurnal Acuan --}}
+                    <div class="td-method-section mb-3">
+                        <label for="journalSelect" class="form-label fw-semibold small">
                             Pilih Jurnal Acuan
                         </label>
 
@@ -164,13 +163,10 @@
                                     data-reflection-summary="{{ $latestReflection?->summary ?? '' }}"
                                     data-reflection-date="{{ $latestReflection?->created_at?->format('d M Y, H:i') ?? '' }}"
                                     {{ (string) old('journal_id') === (string) $journal->id ? 'selected' : '' }}>
-
-                                    {{ $journal->title ?: 'Catatan Pribadi' }}
-                                    — {{ $journal->journaled_at->format('d M Y') }}
-
+                                    {{ $journal->title ?: 'Catatan Pribadi' }} —
+                                    {{ $journal->journaled_at->format('d M Y') }}
                                 </option>
                             @endforeach
-
                         </select>
 
                         @error('journal_id')
@@ -179,67 +175,71 @@
 
                         @if ($journals->isEmpty())
                             <p class="text-td-muted small mt-2 mb-0">
-                                Kamu belum memiliki jurnal.
+                                Kamu belum memiliki jurnal tersimpan.
                             </p>
                         @endif
-
                     </div>
 
-                    {{-- Izin berbagi AI Reflection --}}
-                    <div class="border rounded-3 p-3 mb-4">
-
+                    {{-- Izin Berbagi AI Reflection --}}
+                    <div class="td-consent-box mb-4">
                         <div class="form-check">
                             <input type="checkbox" name="share_ai_reflection" value="1" id="shareAiReflection"
                                 class="form-check-input" {{ old('share_ai_reflection') ? 'checked' : '' }}>
 
                             <label for="shareAiReflection" class="form-check-label fw-semibold">
-                                Bagikan Refleksi AI
+                                Bagikan Refleksi AI (Hermes)
                             </label>
                         </div>
 
-                        <p class="text-td-muted small mt-1 mb-2">
-                            Refleksi AI akan otomatis mengikuti jurnal yang kamu pilih.
-                            Persetujuan berbagi tetap berada di tanganmu.
+                        <p class="text-td-muted small mt-1 mb-3 ps-4">
+                            Refleksi AI otomatis mengikuti jurnal yang kamu pilih. Persetujuan berbagi tetap berada di
+                            tanganmu.
                         </p>
 
-
-                        <div id="reflectionMatchInfo" class="bg-light rounded-3 p-3 mt-2" aria-live="polite">
-
-                            <div class="fw-semibold small mb-2">
+                        <div id="reflectionMatchInfo" class="bg-white border rounded-3 p-3 ms-4" aria-live="polite">
+                            <div class="fw-semibold small text-td-primary mb-1">
                                 Ringkasan Cerita AI
                             </div>
 
-                            <p id="reflectionSummary" class="small mb-2">
+                            <p id="reflectionSummary" class="text-td-muted small mb-1" style="line-height: 1.65;">
                                 Pilih jurnal untuk melihat ringkasan refleksi AI.
                             </p>
 
-                            <small id="reflectionDate" class="text-td-muted">
-                            </small>
+                            <small id="reflectionDate" class="text-td-muted" style="font-size: 11px;"></small>
                         </div>
-
 
                         @error('share_ai_reflection')
-                            <div class="text-danger small mt-2">{{ $message }}</div>
+                            <div class="text-danger small mt-2 ps-4">{{ $message }}</div>
                         @enderror
-
                     </div>
 
-                    {{-- Privacy information --}}
-                    <div class="bg-light rounded-3 p-3 mb-4">
-                        <div class="d-flex gap-2">
-                            <span class="text-td-primary fw-bold">P</span>
-
-                            <div>
-                                <h6 class="fw-semibold small mb-1">
-                                    Kendali tetap berada padamu
-                                </h6>
-
-                                <p class="text-td-muted small mb-0">
-                                    Informasi yang tidak kamu pilih tidak akan disertakan
-                                    sebagai materi jurnal atau refleksi untuk konsultasi ini.
-                                </p>
-                            </div>
+                    {{-- Privacy Notice --}}
+                    <div class="td-writing-privacy mb-4">
+                        <div class="td-writing-privacy-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" />
+                                <path d="m9 12 2 2 4-4" />
+                            </svg>
                         </div>
+
+                        <div>
+                            <h6 class="fw-semibold small mb-1">Kendali tetap berada padamu</h6>
+                            <p class="text-td-muted small mb-0">
+                                Informasi yang tidak kamu pilih tidak akan disertakan sebagai materi jurnal
+                                atau refleksi untuk konsultasi ini.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-3 mb-3 small"
+                        style="background: var(--td-surface-muted); border: 1px solid var(--td-border); line-height: 1.7;">
+                        <strong class="text-dark d-block mb-1">Catatan Layanan Pendampingan Sebaya</strong>
+                        <span class="text-td-muted">
+                            Konselor sebaya siap mendengarkan dan menemanimu berdiskusi, namun tidak memberikan diagnosis
+                            maupun terapi
+                            klinis. Untuk kondisi darurat, segera hubungi layanan darurat <strong>119 (ekstensi 8)</strong>.
+                        </span>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2">
@@ -257,33 +257,39 @@
             </div>
         </div>
 
-        {{-- Informasi tambahan --}}
-        <div class="col-lg-4">
-            <div class="td-card">
+        {{-- Kolom Kanan: Panduan Singkat --}}
+        <div class="col-lg-4 td-writing-sidebar">
+            <aside class="td-card td-writing-tip-card">
+                <div class="td-tip-icon mb-3">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4" />
+                        <path d="M12 8h.01" />
+                    </svg>
+                </div>
 
-                <div class="feature-icon mb-3">C</div>
+                <span class="td-section-eyebrow">INFORMASI SESI</span>
+                <h6 class="fw-bold mt-1 mb-3">Sebelum Mengirim Permintaan</h6>
 
-                <h6 class="fw-bold mb-3">Sebelum Mengirim Permintaan</h6>
-
-                <div class="border-start border-3 ps-3 mb-3" style="border-color: #73B7AA !important;">
+                <div class="td-writing-tip-quote mb-3">
                     <p class="small mb-0">
                         Pilih topik yang paling sesuai dengan hal yang ingin kamu bahas.
                     </p>
                 </div>
 
-                <div class="border-start border-3 ps-3 mb-3" style="border-color: #73B7AA !important;">
+                <div class="td-writing-tip-quote mb-3">
                     <p class="small mb-0">
-                        Waktu yang kamu pilih merupakan preferensi, bukan jadwal yang sudah dikonfirmasi.
+                        Waktu yang kamu pilih merupakan preferensi awal sebelum dikonfirmasi konselor.
                     </p>
                 </div>
 
-                <div class="border-start border-3 ps-3" style="border-color: #73B7AA !important;">
+                <div class="td-writing-tip-quote">
                     <p class="small mb-0">
-                        Kamu tidak wajib membagikan jurnal maupun refleksi AI.
+                        Kamu tidak wajib membagikan jurnal maupun refleksi AI untuk mengajukan sesi.
                     </p>
                 </div>
-
-            </div>
+            </aside>
         </div>
 
     </div>
@@ -291,271 +297,116 @@
     {{-- Loading overlay --}}
     <div id="consultationLoading" class="td-journal-loading" aria-hidden="true">
         <div class="td-journal-loading__dialog" role="status" aria-live="polite">
-            <div class="td-journal-loading__spinner"></div>
-            <h5 class="fw-bold mb-2">
-                Mengirim Permintaan Konsultasi
-            </h5>
+            <div class="td-journal-loading__spinner" aria-hidden="true"></div>
+            <h5 class="fw-bold mb-2">Mengirim Permintaan Konsultasi</h5>
             <p class="text-td-muted small mb-0">
-                Permintaanmu sedang disimpan dan Hermes sedang
-                menyiapkan ringkasan untuk konselor.
-                Proses ini bisa memerlukan beberapa saat.
-                Jangan tutup atau refresh halaman ini.
+                Permintaanmu sedang disimpan dan Hermes sedang menyiapkan ringkasan untuk konselor.
+                Proses ini bisa memerlukan beberapa saat. Jangan tutup atau refresh halaman ini.
             </p>
         </div>
     </div>
 
-    <style>
-        .td-journal-loading {
-            position: fixed;
-            inset: 0;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: rgba(23, 39, 55, .48);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transition: opacity .2s ease, visibility .2s ease;
-        }
+    @push('scripts')
+        <script>
+            (() => {
+                const form = document.getElementById('consultationForm');
+                const overlay = document.getElementById('consultationLoading');
+                const shareJournal = document.getElementById('shareJournal');
+                const shareAi = document.getElementById('shareAiReflection');
+                const journalSelect = document.getElementById('journalSelect');
+                const reflectionInfo = document.getElementById('reflectionMatchInfo');
+                const submitButton = document.getElementById('submitConsultation');
 
-        .td-journal-loading.is-visible {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
+                if (!form || !overlay || !shareJournal || !shareAi || !journalSelect || !reflectionInfo) return;
 
-        .td-journal-loading__dialog {
-            width: min(100%, 390px);
-            padding: 32px 28px;
-            border-radius: 20px;
-            background: #fff;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(15, 35, 55, .18);
-        }
+                let isSubmitting = false;
 
-        .td-journal-loading__spinner {
-            width: 44px;
-            height: 44px;
-            margin: 0 auto 20px;
-            border: 4px solid #e7edf7;
-            border-top-color: #2347a8;
-            border-radius: 50%;
-            animation: consultation-spin .8s linear infinite;
-        }
-
-        @keyframes consultation-spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
-
-
-    <script>
-        (() => {
-            const form = document.getElementById('consultationForm');
-            const overlay = document.getElementById('consultationLoading');
-
-            const shareJournal = document.getElementById('shareJournal');
-            const shareAi = document.getElementById('shareAiReflection');
-            const journalSelect = document.getElementById('journalSelect');
-
-            const reflectionInfo = document.getElementById('reflectionMatchInfo');
-            const submitButton = document.getElementById('submitConsultation');
-
-            if (
-                !form ||
-                !overlay ||
-                !shareJournal ||
-                !shareAi ||
-                !journalSelect ||
-                !reflectionInfo
-            ) return;
-
-            let isSubmitting = false;
-
-            // ========================================
-            // UPDATE FORM PERSETUJUAN BERBAGI
-            // ========================================
-
-            function updateSharingForm() {
-                // Jurnal diperlukan jika salah satu materi ingin dibagikan.
-                const needsJournal =
-                    shareJournal.checked || shareAi.checked;
-
-                journalSelect.disabled = !needsJournal;
-                journalSelect.required = needsJournal;
-
-                updateReflectionPreview();
-            }
-
-            // ========================================
-            // UPDATE PREVIEW AI REFLECTION
-            // ========================================
-
-            function updateReflectionPreview() {
-                const option = journalSelect.selectedOptions[0];
-
-                const summaryElement =
-                    document.getElementById('reflectionSummary');
-
-                const dateElement =
-                    document.getElementById('reflectionDate');
-
-                const hasJournal = Boolean(option?.value);
-
-                const reflectionId =
-                    option?.dataset.reflectionId || '';
-
-                const summary =
-                    option?.dataset.reflectionSummary || '';
-
-                const date =
-                    option?.dataset.reflectionDate || '';
-
-                const hasReflection = Boolean(
-                    reflectionId && summary.trim()
-                );
-
-                // AI Reflection hanya bisa dibagikan jika tersedia.
-                shareAi.disabled = !hasReflection;
-
-                if (!hasReflection) {
-                    shareAi.checked = false;
-
-                    summaryElement.textContent = hasJournal ?
-                        'Jurnal ini belum memiliki refleksi AI yang selesai dibuat.' :
-                        'Pilih jurnal untuk melihat ringkasan refleksi AI.';
-
-                    dateElement.textContent = '';
-
-                    return;
+                function updateSharingForm() {
+                    const needsJournal = shareJournal.checked || shareAi.checked;
+                    journalSelect.disabled = !needsJournal;
+                    journalSelect.required = needsJournal;
+                    updateReflectionPreview();
                 }
 
-                summaryElement.textContent = summary;
-
-                dateElement.textContent = date ?
-                    `Dibuat ${date}` :
-                    '';
-            }
-
-            // ========================================
-            // EVENT PERUBAHAN PERSETUJUAN
-            // ========================================
-
-            shareJournal.addEventListener(
-                'change',
-                updateSharingForm
-            );
-
-            shareAi.addEventListener(
-                'change',
-                updateSharingForm
-            );
-
-            journalSelect.addEventListener(
-                'change',
-                updateReflectionPreview
-            );
-
-            // Atur kondisi awal form.
-            updateSharingForm();
-
-            // ========================================
-            // SUBMIT FORM DAN LOADING OVERLAY
-            // ========================================
-
-            form.addEventListener('submit', (event) => {
-
-                // Cegah pengiriman berulang.
-                if (isSubmitting) {
-                    event.preventDefault();
-                    return;
-                }
-
-                // Validasi jurnal acuan.
-                if (
-                    (shareJournal.checked || shareAi.checked) &&
-                    !journalSelect.value
-                ) {
-                    event.preventDefault();
-
-                    alert('Pilih jurnal acuan terlebih dahulu.');
-
-                    journalSelect.focus();
-
-                    return;
-                }
-
-                // Pastikan AI Reflection tersedia.
-                if (shareAi.checked) {
+                function updateReflectionPreview() {
                     const option = journalSelect.selectedOptions[0];
+                    const summaryElement = document.getElementById('reflectionSummary');
+                    const dateElement = document.getElementById('reflectionDate');
 
-                    if (!option?.dataset.reflectionId) {
-                        event.preventDefault();
+                    const hasJournal = Boolean(option?.value);
+                    const reflectionId = option?.dataset.reflectionId || '';
+                    const summary = option?.dataset.reflectionSummary || '';
+                    const date = option?.dataset.reflectionDate || '';
+                    const hasReflection = Boolean(reflectionId && summary.trim());
 
-                        alert(
-                            'Jurnal yang dipilih belum memiliki refleksi AI yang selesai.'
-                        );
+                    shareAi.disabled = !hasReflection;
 
-                        journalSelect.focus();
-
+                    if (!hasReflection) {
+                        shareAi.checked = false;
+                        summaryElement.textContent = hasJournal ?
+                            'Jurnal ini belum memiliki refleksi AI yang selesai dibuat.' :
+                            'Pilih jurnal untuk melihat ringkasan refleksi AI.';
+                        dateElement.textContent = '';
                         return;
                     }
+
+                    summaryElement.textContent = summary;
+                    dateElement.textContent = date ? `Dibuat ${date}` : '';
                 }
 
-                /*
-                 * Semua validasi lolos.
-                 * Tampilkan loading sebelum browser mengirim form.
-                 */
+                shareJournal.addEventListener('change', updateSharingForm);
+                shareAi.addEventListener('change', updateSharingForm);
+                journalSelect.addEventListener('change', updateReflectionPreview);
 
-                isSubmitting = true;
+                updateSharingForm();
 
-                overlay.classList.add('is-visible');
+                form.addEventListener('submit', (event) => {
+                    if (isSubmitting) {
+                        event.preventDefault();
+                        return;
+                    }
 
-                overlay.setAttribute('aria-hidden', 'false');
+                    if ((shareJournal.checked || shareAi.checked) && !journalSelect.value) {
+                        event.preventDefault();
+                        alert('Pilih jurnal acuan terlebih dahulu.');
+                        journalSelect.focus();
+                        return;
+                    }
 
-                // Nonaktifkan tombol agar tidak diklik berulang.
-                if (submitButton) {
-                    submitButton.disabled = true;
+                    if (shareAi.checked) {
+                        const option = journalSelect.selectedOptions[0];
+                        if (!option?.dataset.reflectionId) {
+                            event.preventDefault();
+                            alert('Jurnal yang dipilih belum memiliki refleksi AI yang selesai.');
+                            journalSelect.focus();
+                            return;
+                        }
+                    }
 
-                    submitButton.setAttribute(
-                        'aria-disabled',
-                        'true'
-                    );
+                    isSubmitting = true;
+                    overlay.classList.add('is-visible');
+                    overlay.setAttribute('aria-hidden', 'false');
 
-                    submitButton.textContent = 'Mengirim...';
-                }
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.setAttribute('aria-disabled', 'true');
+                        submitButton.textContent = 'Mengirim...';
+                    }
+                });
 
-                // Tidak menggunakan preventDefault.
-                // Form tetap dikirim secara normal ke Laravel.
-            });
+                window.addEventListener('pageshow', () => {
+                    isSubmitting = false;
+                    overlay.classList.remove('is-visible');
+                    overlay.setAttribute('aria-hidden', 'true');
 
-            // ========================================
-            // RESET SAAT HALAMAN DARI BROWSER CACHE
-            // ========================================
-
-            window.addEventListener('pageshow', () => {
-
-                isSubmitting = false;
-
-                overlay.classList.remove('is-visible');
-
-                overlay.setAttribute('aria-hidden', 'true');
-
-                if (submitButton) {
-                    submitButton.disabled = false;
-
-                    submitButton.removeAttribute('aria-disabled');
-
-                    submitButton.textContent = 'Kirim Permintaan';
-                }
-            });
-
-        })();
-    </script>
-
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.removeAttribute('aria-disabled');
+                        submitButton.textContent = 'Kirim Permintaan';
+                    }
+                });
+            })();
+        </script>
+    @endpush
 
 @endsection

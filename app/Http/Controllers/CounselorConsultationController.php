@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateConsultationSummaryJob;
 use App\Models\Counselor;
-use App\Services\ConsultationSummaryService;
+use App\Notifications\ConsultationStatusNotification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,14 +30,25 @@ class CounselorConsultationController extends Controller
         return $counselor;
     }
 
-    /**
-     * Dashboard awal / inbox permintaan konsultasi konselor.
-     */
     public function index(Request $request): View
     {
         $counselor = $this->getCounselor($request);
 
-        // Ringkasan jumlah permintaan.
+        $allowedStatuses = [
+            'pending_confirmation',
+            'accepted',
+            'completed',
+            'cancelled',
+            'rejected',
+        ];
+
+        $selectedStatus = trim((string) $request->query('status', ''));
+        if (!in_array($selectedStatus, $allowedStatuses, true)) {
+            $selectedStatus = '';
+        }
+
+        $keyword = trim((string) $request->query('q', ''));
+
         $totalRequests = $counselor->consultations()->count();
 
         $pendingRequests = $counselor->consultations()
@@ -50,15 +63,37 @@ class CounselorConsultationController extends Controller
             ->where('status', 'completed')
             ->count();
 
-        // Permintaan milik konselor yang sedang login.
-        // Permintaan yang menunggu konfirmasi ditampilkan lebih dahulu.
-        $consultations = $counselor->consultations()
-            ->with('user')
+        $cancelledRequests = $counselor->consultations()
+            ->where('status', 'cancelled')
+            ->count();
+
+        $rejectedRequests = $counselor->consultations()
+            ->where('status', 'rejected')
+            ->count();
+
+        $query = $counselor->consultations()
+            ->with('user');
+
+        if ($selectedStatus !== '') {
+            $query->where('status', $selectedStatus);
+        }
+
+        if ($keyword !== '') {
+            $query->where(function ($builder) use ($keyword) {
+                $builder->where('topic', 'like', '%' . $keyword . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($keyword) {
+                        $userQuery->where('name', 'like', '%' . $keyword . '%');
+                    });
+            });
+        }
+
+        $consultations = $query
             ->orderByRaw(
                 "CASE WHEN status = 'pending_confirmation' THEN 0 ELSE 1 END"
             )
             ->latest('created_at')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         return view('counselor.consultations.index', compact(
             'counselor',
@@ -66,6 +101,10 @@ class CounselorConsultationController extends Controller
             'pendingRequests',
             'acceptedRequests',
             'completedRequests',
+            'cancelledRequests',
+            'rejectedRequests',
+            'selectedStatus',
+            'keyword',
             'consultations'
         ));
     }
@@ -78,16 +117,10 @@ class CounselorConsultationController extends Controller
     {
         $counselor = $this->getCounselor($request);
 
-        // Hanya mengambil konsultasi milik konselor yang sedang login.
-        // Tidak memuat relasi jurnal atau AI Reflection secara langsung.
         $consultation = $counselor->consultations()
             ->with('user')
             ->findOrFail($consultation);
 
-        /*
-         * Gunakan snapshot jurnal hanya jika ada persetujuan.
-         * Snapshot merupakan salinan materi saat pengajuan.
-         */
         $sharedJournal = (
             $consultation->share_journal &&
             is_array($consultation->shared_journal_snapshot)
@@ -95,10 +128,6 @@ class CounselorConsultationController extends Controller
             ? $consultation->shared_journal_snapshot
             : null;
 
-        /*
-         * Gunakan snapshot AI Reflection secara independen.
-         * Persetujuan jurnal tidak otomatis mengizinkan AI Reflection.
-         */
         $sharedReflection = (
             $consultation->share_ai_reflection &&
             is_array($consultation->shared_ai_reflection_snapshot)
@@ -115,13 +144,20 @@ class CounselorConsultationController extends Controller
     }
 
     /**
-     * Mencoba ulang pembuatan ringkasan konsultasi oleh Hermes.
-     *
-     * Ketentuan:
-     * - Hanya Konselor pemilik konsultasi yang boleh melakukan retry.
-     * - Hanya briefing dengan status failed yang boleh dicoba ulang.
-     * - Menggunakan konsultasi dan snapshot yang sama.
-     * - Mencegah retry ganda melalui perubahan status secara atomik.
+     * Endpoint JSON untuk mengecek status pembuatan ringkasan konsultasi.
+     */
+    public function briefStatus(Request $request, int $consultation): JsonResponse
+    {
+        $counselor = $this->getCounselor($request);
+        $record = $counselor->consultations()->findOrFail($consultation);
+
+        return response()->json([
+            'brief_status' => $record->brief_status,
+        ]);
+    }
+
+    /**
+     * Mencoba ulang pembuatan ringkasan konsultasi oleh Hermes di latar belakang.
      */
     public function retryBrief(
         Request $request,
@@ -129,16 +165,9 @@ class CounselorConsultationController extends Controller
     ): RedirectResponse {
         $counselor = $this->getCounselor($request);
 
-        // Pastikan konsultasi memang milik Konselor yang login.
         $record = $counselor->consultations()
             ->findOrFail($consultation);
 
-        /*
-         * Ambil hak retry hanya jika status masih failed.
-         *
-         * Jika dua request masuk hampir bersamaan,
-         * hanya satu request yang bisa mengubah failed menjadi processing.
-         */
         $claimed = $counselor->consultations()
             ->whereKey($record->id)
             ->where('brief_status', 'failed')
@@ -147,7 +176,6 @@ class CounselorConsultationController extends Controller
                 'brief_error' => null,
             ]);
 
-        // Retry ditolak jika status sudah berubah.
         if ($claimed !== 1) {
             return redirect()
                 ->route('counselor.consultations.show', $record->id)
@@ -156,34 +184,12 @@ class CounselorConsultationController extends Controller
                 ]);
         }
 
-        // Muat ulang data dengan status processing.
-        $record->refresh();
-
-        /*
-         * Panggil service yang sama.
-         * Service akan mengirim ulang data dari snapshot
-         * yang sebelumnya telah disetujui Pencerita.
-         */
-        $generated = app(ConsultationSummaryService::class)
-            ->generate($record);
-
-        if ($generated) {
-            return redirect()
-                ->route('counselor.consultations.show', $record->id)
-                ->with(
-                    'success',
-                    'Ringkasan persiapan konsultasi berhasil dibuat ulang.'
-                );
-        }
+        GenerateConsultationSummaryJob::dispatch($record->id);
 
         return redirect()
             ->route('counselor.consultations.show', $record->id)
-            ->withErrors([
-                'brief' => 'Ringkasan masih belum berhasil dibuat. Silakan coba lagi nanti.',
-            ]);
+            ->with('success', 'Ringkasan persiapan konsultasi sedang dibuat ulang di latar belakang.');
     }
-
-
 
     /**
      * Menerima permintaan konsultasi.
@@ -217,8 +223,6 @@ class CounselorConsultationController extends Controller
 
     /**
      * Memperbarui status permintaan.
-     * Hanya permintaan pending_confirmation
-     * yang boleh diproses.
      */
     private function updateRequestStatus(
         Request $request,
@@ -229,12 +233,10 @@ class CounselorConsultationController extends Controller
         $counselor = $this->getCounselor($request);
 
         return DB::transaction(function () use ($counselor, $consultation, $newStatus, $successMessage) {
-            // Kunci record selama proses perubahan status.
             $consultationRecord = $counselor->consultations()
                 ->lockForUpdate()
                 ->findOrFail($consultation);
 
-            // Status hanya dapat diubah satu kali dari pending.
             if ($consultationRecord->status !== 'pending_confirmation') {
                 return redirect()
                     ->route('counselor.consultations.show', $consultationRecord->id)
@@ -247,16 +249,28 @@ class CounselorConsultationController extends Controller
                 'status' => $newStatus,
             ]);
 
+            $consultationRecord->loadMissing('user');
+            if ($consultationRecord->user) {
+                $isAccepted = $newStatus === 'accepted';
+                $consultationRecord->user->notify(new ConsultationStatusNotification(
+                    consultation: $consultationRecord,
+                    title: $isAccepted ? 'Pengajuan Konsultasi Diterima' : 'Pengajuan Konsultasi Ditolak',
+                    message: $isAccepted
+                    ? "{$counselor->name} menerima pengajuan konsultasimu (\"{$consultationRecord->topic}\") dan akan segera menetapkan jadwal."
+                    : "{$counselor->name} belum dapat menerima pengajuan konsultasimu untuk topik \"{$consultationRecord->topic}\".",
+                    actionUrl: route('consultations.show', $consultationRecord->id),
+                    eventType: $newStatus
+                ));
+            }
+
             return redirect()
                 ->route('counselor.consultations.show', $consultationRecord->id)
                 ->with('success', $successMessage);
         });
     }
 
-
     /**
-     * Menetapkan atau memperbarui jadwal final konsultasi.
-     * Hanya Konselor pemilik permintaan yang boleh melakukannya.
+     * Menetapkan atau memperbarui jadwal final serta media pertemuan konsultasi.
      */
     public function schedule(
         Request $request,
@@ -270,9 +284,22 @@ class CounselorConsultationController extends Controller
                 'date',
                 'after:now',
             ],
+            'meeting_link' => [
+                'required',
+                'string',
+                'max:500',
+            ],
+            'meeting_notes' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
         ], [
             'scheduled_at.required' => 'Tentukan jadwal konsultasi.',
             'scheduled_at.after' => 'Jadwal final harus berada setelah waktu sekarang.',
+            'meeting_link.required' => 'Sertakan tautan meeting (Google Meet/Zoom) atau lokasi pertemuan.',
+            'meeting_link.max' => 'Tautan atau lokasi pertemuan maksimal 500 karakter.',
+            'meeting_notes.max' => 'Catatan pertemuan maksimal 1.000 karakter.',
         ]);
 
         return DB::transaction(function () use ($counselor, $consultation, $validated) {
@@ -286,18 +313,38 @@ class CounselorConsultationController extends Controller
                 ]);
             }
 
+            $isReschedule = $record->scheduled_at !== null;
+
             $record->update([
                 'scheduled_at' => $validated['scheduled_at'],
+                'meeting_link' => trim($validated['meeting_link']),
+                'meeting_notes' => filled($validated['meeting_notes'] ?? null)
+                    ? trim($validated['meeting_notes'])
+                    : null,
             ]);
+
+            $record->loadMissing('user');
+            if ($record->user) {
+                $formattedSchedule = $record->scheduled_at->format('d M Y, H:i') . ' WIB';
+                $consultationLabel = $isReschedule ? 'Jadwal Konsultasi Diperbarui' : 'Jadwal Konsultasi Ditetapkan';
+
+                $record->user->notify(new ConsultationStatusNotification(
+                    consultation: $record,
+                    title: $consultationLabel,
+                    message: "{$counselor->name} menetapkan jadwal sesi \"{$record->topic}\" pada {$formattedSchedule}.",
+                    actionUrl: route('consultations.show', $record->id),
+                    eventType: 'scheduled'
+                ));
+            }
 
             return redirect()
                 ->route('counselor.consultations.show', $record->id)
-                ->with('success', 'Jadwal konsultasi berhasil ditetapkan.');
+                ->with('success', 'Jadwal dan informasi pertemuan konsultasi berhasil disimpan.');
         });
     }
 
     /**
-     * Menandai konsultasi telah selesai.
+     * Menandai konsultasi telah selesai beserta catatan pasca-sesi opsional.
      */
     public function complete(
         Request $request,
@@ -305,7 +352,17 @@ class CounselorConsultationController extends Controller
     ): RedirectResponse {
         $counselor = $this->getCounselor($request);
 
-        return DB::transaction(function () use ($counselor, $consultation) {
+        $validated = $request->validate([
+            'counselor_notes' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+        ], [
+            'counselor_notes.max' => 'Catatan pasca-sesi maksimal 2.000 karakter.',
+        ]);
+
+        return DB::transaction(function () use ($counselor, $consultation, $validated) {
             $record = $counselor->consultations()
                 ->lockForUpdate()
                 ->findOrFail($consultation);
@@ -328,12 +385,26 @@ class CounselorConsultationController extends Controller
             $record->update([
                 'status' => 'completed',
                 'completed_at' => now(),
+                'counselor_notes' => filled($validated['counselor_notes'] ?? null)
+                    ? trim($validated['counselor_notes'])
+                    : null,
             ]);
+
+            $record->loadMissing('user');
+            if ($record->user) {
+                $record->user->notify(new ConsultationStatusNotification(
+                    consultation: $record,
+                    title: 'Sesi Konsultasi Selesai',
+                    message: "{$counselor->name} telah menandai sesi \"{$record->topic}\" selesai."
+                    . (filled($record->counselor_notes) ? ' Catatan tindak lanjut tersedia.' : ''),
+                    actionUrl: route('consultations.show', $record->id),
+                    eventType: 'completed'
+                ));
+            }
 
             return redirect()
                 ->route('counselor.consultations.show', $record->id)
                 ->with('success', 'Konsultasi berhasil ditandai selesai.');
         });
     }
-
 }

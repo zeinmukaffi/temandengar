@@ -18,7 +18,12 @@ class Consultation extends Model
         'preferred_at',
 
         'scheduled_at',
+        'meeting_link',
+        'meeting_notes',
         'completed_at',
+        'cancelled_at',
+        'cancellation_reason',
+        'counselor_notes',
 
         'share_journal',
         'share_ai_reflection',
@@ -43,6 +48,7 @@ class Consultation extends Model
             'preferred_at' => 'datetime',
             'scheduled_at' => 'datetime',
             'completed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
 
             'share_journal' => 'boolean',
             'share_ai_reflection' => 'boolean',
