@@ -191,7 +191,7 @@
                 @endphp
 
                 <div class="col-md-6">
-                    <div class="td-card">
+                    <div class="td-card h-100">
 
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                             <div>

@@ -52,7 +52,7 @@
 
         {{-- Journaling --}}
         <div class="col-md-6">
-            <div class="td-card">
+            <div class="td-card h-100">
                 <div class="feature-icon mb-3">J</div>
 
                 <h5 class="fw-bold mb-2">Journaling</h5>
@@ -68,9 +68,9 @@
             </div>
         </div>
 
-        {{-- Journaling --}}
+        {{-- Konseling --}}
         <div class="col-md-6">
-            <div class="td-card">
+            <div class="td-card h-100">
                 <div class="feature-icon mb-3">C</div>
 
                 <h5 class="fw-bold mb-2">Butuh teman untuk bercerita?</h5>
