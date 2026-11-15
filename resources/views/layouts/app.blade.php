@@ -268,7 +268,8 @@
 
                 <div class="modal-footer border-0 pt-0">
 
-                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal"
+                        id="tdConfirmModalCancelButton">
                         Batal
                     </button>
 
@@ -284,6 +285,148 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous">
+    </script>
+
+    {{-- Global Confirmation Modal Engine --}}
+    <script>
+        (() => {
+            const modalElement = document.getElementById('tdConfirmModal');
+            if (!modalElement || typeof bootstrap === 'undefined') return;
+
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            const titleEl = document.getElementById('tdConfirmModalTitle');
+            const messageEl = document.getElementById('tdConfirmModalMessage');
+            const confirmBtn = document.getElementById('tdConfirmModalButton');
+            const cancelBtn = document.getElementById('tdConfirmModalCancelButton');
+
+            let pendingForm = null;
+            let pendingSubmitter = null;
+
+            const VARIANT_MAP = {
+                primary: 'btn-primary',
+                secondary: 'btn-secondary',
+                success: 'btn-success',
+                danger: 'btn-danger',
+                warning: 'btn-warning'
+            };
+
+            const DEFAULT_VARIANT_CLASS = 'btn-primary';
+            const ALL_VARIANT_CLASSES = Object.values(VARIANT_MAP);
+
+            function resolveVariantClass(variantName) {
+                if (typeof variantName !== 'string') return DEFAULT_VARIANT_CLASS;
+                const key = variantName.toLowerCase().trim();
+                return VARIANT_MAP[key] || DEFAULT_VARIANT_CLASS;
+            }
+
+            function setConfirmButtonVariant(variantName) {
+                if (!confirmBtn) return;
+                confirmBtn.classList.remove(...ALL_VARIANT_CLASSES);
+                confirmBtn.classList.add(resolveVariantClass(variantName));
+            }
+
+            function resetModal() {
+                pendingForm = null;
+                pendingSubmitter = null;
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    setConfirmButtonVariant('primary');
+                    confirmBtn.textContent = 'Ya, Lanjutkan';
+                }
+                if (cancelBtn) {
+                    cancelBtn.disabled = false;
+                    cancelBtn.textContent = 'Batal';
+                }
+                if (titleEl) titleEl.textContent = 'Konfirmasi Tindakan';
+                if (messageEl) messageEl.textContent = 'Apakah kamu yakin ingin melanjutkan tindakan ini?';
+            }
+
+            // Capture-phase listener to intercept submission before local listeners fire
+            document.addEventListener('submit', (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) return;
+
+                const submitter = event.submitter;
+                const confirmMsg = submitter?.dataset?.confirm ?? form.dataset.confirm;
+
+                // Form does not require confirmation; allow normal submission
+                if (confirmMsg === undefined) return;
+
+                // Form has already been confirmed by the user; allow execution to proceed to local listeners
+                if (form.dataset.tdConfirmed === 'true') {
+                    delete form.dataset.tdConfirmed;
+                    return;
+                }
+
+                // Respect form.noValidate and submitter.formNoValidate
+                const isValidationDisabled = form.noValidate || Boolean(submitter?.formNoValidate);
+                if (!isValidationDisabled && !form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                // Intercept and prevent local submit handlers from prematurely triggering loading states
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                // Extract configuration from submitter (takes precedence) or form
+                const title = submitter?.dataset?.confirmTitle || form.dataset.confirmTitle || 'Konfirmasi Tindakan';
+                const message = (typeof confirmMsg === 'string' && confirmMsg.trim() !== '' && confirmMsg !== 'true')
+                    ? confirmMsg
+                    : 'Apakah kamu yakin ingin melanjutkan tindakan ini?';
+                const buttonText = submitter?.dataset?.confirmButton || form.dataset.confirmButton || 'Ya, Lanjutkan';
+                const buttonVariant = submitter?.dataset?.confirmVariant || form.dataset.confirmVariant || 'primary';
+                const cancelText = submitter?.dataset?.confirmCancel || form.dataset.confirmCancel || 'Batal';
+
+                pendingForm = form;
+                pendingSubmitter = submitter;
+
+                if (titleEl) titleEl.textContent = title;
+                if (messageEl) messageEl.textContent = message;
+                if (confirmBtn) {
+                    confirmBtn.textContent = buttonText;
+                    setConfirmButtonVariant(buttonVariant);
+                }
+                if (cancelBtn) cancelBtn.textContent = cancelText;
+
+                bsModal.show();
+            }, true);
+
+            // Modal confirm button handler
+            confirmBtn?.addEventListener('click', () => {
+                if (!pendingForm) return;
+
+                // Prevent duplicate clicks on the modal confirmation button
+                confirmBtn.disabled = true;
+                if (cancelBtn) cancelBtn.disabled = true;
+
+                const formToSubmit = pendingForm;
+                const submitterToUse = pendingSubmitter;
+
+                pendingForm = null;
+                pendingSubmitter = null;
+
+                bsModal.hide();
+
+                formToSubmit.dataset.tdConfirmed = 'true';
+                if (submitterToUse) {
+                    formToSubmit.requestSubmit(submitterToUse);
+                } else {
+                    formToSubmit.requestSubmit();
+                }
+            });
+
+            // Reset modal state when dismissed via cancel button, 'X', backdrop, or Escape
+            modalElement.addEventListener('hidden.bs.modal', () => {
+                resetModal();
+            });
+
+            // Handle browser bfcache navigation
+            window.addEventListener('pageshow', () => {
+                bsModal.hide();
+                resetModal();
+            });
+        })();
     </script>
 
     @stack('scripts')
