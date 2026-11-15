@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateConsultationSummaryJob;
 use App\Models\Counselor;
-use App\Services\ConsultationSummaryService;
+use App\Notifications\ConsultationStatusNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -17,12 +19,46 @@ class ConsultationController extends Controller
 
         abort_unless($user->role === 'pencerita', 403);
 
-        $consultations = $user->consultations()
-            ->with('counselor')
-            ->latest('created_at')
-            ->paginate(10);
+        $allowedStatuses = [
+            'pending_confirmation',
+            'accepted',
+            'completed',
+            'cancelled',
+            'rejected',
+        ];
 
-        return view('consultations.index', compact('consultations'));
+        $selectedStatus = trim((string) $request->query('status', ''));
+
+        if (!in_array($selectedStatus, $allowedStatuses, true)) {
+            $selectedStatus = '';
+        }
+
+        $statusCounts = [
+            'all' => $user->consultations()->count(),
+            'pending_confirmation' => $user->consultations()->where('status', 'pending_confirmation')->count(),
+            'accepted' => $user->consultations()->where('status', 'accepted')->count(),
+            'completed' => $user->consultations()->where('status', 'completed')->count(),
+            'cancelled' => $user->consultations()->where('status', 'cancelled')->count(),
+            'rejected' => $user->consultations()->where('status', 'rejected')->count(),
+        ];
+
+        $query = $user->consultations()
+            ->with('counselor');
+
+        if ($selectedStatus !== '') {
+            $query->where('status', $selectedStatus);
+        }
+
+        $consultations = $query
+            ->latest('created_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('consultations.index', compact(
+            'consultations',
+            'selectedStatus',
+            'statusCounts'
+        ));
     }
 
     public function show(Request $request, int $consultation): View
@@ -31,8 +67,6 @@ class ConsultationController extends Controller
 
         abort_unless($user->role === 'pencerita', 403);
 
-        // Ambil konsultasi melalui relasi user agar
-        // pengguna tidak bisa membuka konsultasi orang lain.
         $consultation = $user->consultations()
             ->with([
                 'counselor',
@@ -43,10 +77,10 @@ class ConsultationController extends Controller
 
         return view('consultations.show', compact('consultation'));
     }
+
     /**
      * Menampilkan form pengajuan konsultasi.
      */
-
     public function create(Request $request, Counselor $counselor): View
     {
         $user = $request->user();
@@ -58,8 +92,6 @@ class ConsultationController extends Controller
             404
         );
 
-        // Ambil jurnal milik pengguna beserta refleksi AI terbaru
-        // yang sudah selesai dibuat.
         $journals = $user->journals()
             ->with([
                 'aiReflections' => function ($query) {
@@ -76,11 +108,9 @@ class ConsultationController extends Controller
         ));
     }
 
-
     /**
-     * Menyimpan permintaan konsultasi baru.
+     * Menyimpan permintaan konsultasi baru dan menjadwalkan pembuatan ringkasan di latar belakang.
      */
-
     public function store(
         Request $request,
         Counselor $counselor
@@ -118,11 +148,9 @@ class ConsultationController extends Controller
             ],
         ]);
 
-        // Ambil persetujuan secara eksplisit.
         $shareJournal = $request->boolean('share_journal');
         $shareAiReflection = $request->boolean('share_ai_reflection');
 
-        // Jika salah satu materi ingin dibagikan, wajib memilih jurnal acuan.
         if (
             ($shareJournal || $shareAiReflection) &&
             empty($validated['journal_id'])
@@ -142,7 +170,6 @@ class ConsultationController extends Controller
                 ->findOrFail($validated['journal_id']);
         }
 
-        // Cari refleksi terbaru dari jurnal yang sama.
         if ($shareAiReflection) {
             $selectedReflection = $selectedJournal
                 ->aiReflections()
@@ -161,15 +188,9 @@ class ConsultationController extends Controller
             }
         }
 
-        /*
-         * Buat snapshot materi berdasarkan persetujuan Pencerita.
-         * Snapshot tidak mengambil materi yang tidak disetujui.
-         */
-
         $sharedJournalSnapshot = null;
         $sharedAiReflectionSnapshot = null;
 
-        // Snapshot jurnal hanya jika Pencerita menyetujuinya.
         if ($shareJournal && $selectedJournal) {
             $sharedJournalSnapshot = [
                 'title' => $selectedJournal->title,
@@ -179,7 +200,6 @@ class ConsultationController extends Controller
             ];
         }
 
-        // Snapshot AI Reflection terpisah dari snapshot jurnal.
         if ($shareAiReflection && $selectedReflection) {
             $sharedAiReflectionSnapshot = [
                 'summary' => $selectedReflection->summary,
@@ -191,20 +211,10 @@ class ConsultationController extends Controller
             ];
         }
 
-
-        // Simpan permintaan konsultasi.
         $consultation = $user->consultations()->create([
             'counselor_id' => $counselor->id,
-
-            // Jurnal hanya disimpan sebagai materi jika disetujui.
-            'journal_id' => $shareJournal
-                ? $selectedJournal->id
-                : null,
-
-            // Refleksi dipilih otomatis dari jurnal yang sama.
-            'ai_reflection_id' => $shareAiReflection
-                ? $selectedReflection->id
-                : null,
+            'journal_id' => $shareJournal ? $selectedJournal->id : null,
+            'ai_reflection_id' => $shareAiReflection ? $selectedReflection->id : null,
 
             'topic' => $validated['topic'],
             'context' => $validated['context'] ?? null,
@@ -212,38 +222,87 @@ class ConsultationController extends Controller
 
             'share_journal' => $shareJournal,
             'share_ai_reflection' => $shareAiReflection,
+            'consent_at' => ($shareJournal || $shareAiReflection) ? now() : null,
 
-            'consent_at' => ($shareJournal || $shareAiReflection)
-                ? now()
-                : null,
-
-            // Simpan snapshot materi yang telah disetujui.
             'shared_journal_snapshot' => $sharedJournalSnapshot,
             'shared_ai_reflection_snapshot' => $sharedAiReflectionSnapshot,
 
             'consultation_brief' => null,
+            'brief_status' => 'processing',
             'status' => 'pending_confirmation',
         ]);
 
+        GenerateConsultationSummaryJob::dispatch($consultation->id);
 
-
-        /*
-         * Setelah konsultasi tersimpan, minta Hermes
-         * membuat ringkasan melalui workflow n8n.
-         *
-         * Kegagalan Hermes tidak membatalkan konsultasi.
-         */
-        $briefGenerated = app(ConsultationSummaryService::class)
-            ->generate($consultation);
-
-        // Berikan notifikasi sesuai hasil pemrosesan.
-        $message = $briefGenerated
-            ? 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan telah dibuat.'
-            : 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan belum berhasil dibuat.';
+        if ($counselor->user) {
+            $counselor->user->notify(new ConsultationStatusNotification(
+                consultation: $consultation,
+                title: 'Pengajuan Konsultasi Baru',
+                message: "{$user->name} mengajukan konsultasi dengan topik \"{$consultation->topic}\".",
+                actionUrl: route('counselor.consultations.show', $consultation->id),
+                eventType: 'submitted'
+            ));
+        }
 
         return redirect()
             ->route('consultations.show', $consultation->id)
-            ->with('success', $message);
+            ->with('success', 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan sedang dibuat untuk konselor.');
+    }
 
+    /**
+     * Membatalkan pengajuan konsultasi oleh Pencerita.
+     */
+    public function cancel(Request $request, int $consultation): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user->role === 'pencerita', 403);
+
+        $validated = $request->validate([
+            'cancellation_reason' => ['nullable', 'string', 'max:500'],
+        ], [
+            'cancellation_reason.max' => 'Alasan pembatalan maksimal 500 karakter.',
+        ]);
+
+        return DB::transaction(function () use ($user, $consultation, $validated) {
+            $record = $user->consultations()
+                ->lockForUpdate()
+                ->findOrFail($consultation);
+
+            if (!in_array($record->status, ['pending_confirmation', 'accepted'], true)) {
+                return back()->withErrors([
+                    'status' => 'Permintaan konsultasi ini sudah tidak dapat dibatalkan.',
+                ]);
+            }
+
+            if ($record->scheduled_at && $record->scheduled_at->isPast()) {
+                return back()->withErrors([
+                    'status' => 'Konsultasi yang jadwalnya sudah berlalu tidak dapat dibatalkan.',
+                ]);
+            }
+
+            $record->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancellation_reason' => filled($validated['cancellation_reason'] ?? null)
+                    ? trim($validated['cancellation_reason'])
+                    : null,
+            ]);
+
+            $record->loadMissing('counselor.user');
+            if ($record->counselor?->user) {
+                $record->counselor->user->notify(new ConsultationStatusNotification(
+                    consultation: $record,
+                    title: 'Konsultasi Dibatalkan Pencerita',
+                    message: "{$user->name} membatalkan pengajuan konsultasi topik \"{$record->topic}\".",
+                    actionUrl: route('counselor.consultations.show', $record->id),
+                    eventType: 'cancelled'
+                ));
+            }
+
+            return redirect()
+                ->route('consultations.show', $record->id)
+                ->with('success', 'Permintaan konsultasi berhasil dibatalkan.');
+        });
     }
 }

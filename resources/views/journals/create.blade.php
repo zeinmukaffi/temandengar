@@ -5,20 +5,27 @@
 @section('content')
 
     <div class="mb-4">
-        <a href="{{ route('journals.index') }}" class="text-td-primary text-decoration-none small">
-            &larr; Kembali ke Journaling
+        <a href="{{ route('journals.index') }}" class="td-back-link text-decoration-none">
+            <span aria-hidden="true">&larr;</span>
+            Kembali ke Journaling
         </a>
 
-        <h3 class="fw-bold mt-3 mb-1">Tulis Ceritamu</h3>
+        <div class="mt-3">
+            <span class="td-section-eyebrow">RUANG PRIBADI</span>
 
-        <p class="text-td-muted">
-            Pilih cara menulis yang paling nyaman untukmu. Tidak ada jawaban yang salah.
-        </p>
+            <h3 class="fw-bold mt-1 mb-1">
+                Tulis Ceritamu
+            </h3>
+
+            <p class="text-td-muted mb-0">
+                Pilih cara menulis yang paling nyaman untukmu. Tidak ada jawaban yang salah.
+            </p>
+        </div>
     </div>
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="td-card">
+            <div class="td-card td-writing-card">
                 <form id="journalCreateForm" action="{{ route('journals.store') }}" method="POST">
                     @csrf
 
@@ -34,8 +41,15 @@
                         @enderror
                     </div>
 
-                    <div class="mb-3">
-                        <label for="entry_type" class="form-label fw-medium">Metode Menulis</label>
+                    <div class="td-method-section mb-4">
+                        <label for="entry_type" class="form-label fw-semibold mb-1">
+                            Bagaimana kamu ingin menulis?
+                        </label>
+
+                        <p class="text-td-muted small mb-3">
+                            Kamu bisa menulis bebas atau mengikuti beberapa pertanyaan panduan.
+                        </p>
+
                         <select name="entry_type" id="entry_type"
                             class="form-select @error('entry_type') is-invalid @enderror" required>
                             <option value="free" {{ old('entry_type', 'free') === 'free' ? 'selected' : '' }}>
@@ -45,119 +59,182 @@
                                 Guided Journaling - Menggunakan panduan
                             </option>
                         </select>
+
                         @error('entry_type')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div class="mb-3">
-                        <label for="mood" class="form-label fw-medium">
-                            Bagaimana perasaanmu saat ini? <span class="text-td-muted">(Opsional)</span>
-                        </label>
-                        <select name="mood" id="mood" class="form-select">
-                            <option value="">Tidak ingin memilih mood</option>
-                            @foreach ($moods as $value => $label)
-                                <option value="{{ $value }}" {{ old('mood') === $value ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('mood')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="mood_note" class="form-label fw-medium">
-                            Catatan Mood <span class="text-td-muted">(Opsional)</span>
-                        </label>
-                        <input type="text" name="mood_note" id="mood_note" class="form-control"
-                            placeholder="Apa yang kamu rasakan?" value="{{ old('mood_note') }}" maxlength="500">
-                        @error('mood_note')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    {{-- Guided Journaling: jawaban menjadi bahan untuk menyusun draf cerita. --}}
-                    <div id="guidedWritingSection" class="mb-4" hidden>
-                        <div class="alert alert-info py-2 small">
-                            Jawab satu atau beberapa pertanyaan. Jawabanmu akan disusun menjadi cerita yang bisa kamu edit
-                            sebelum disimpan.
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-5">
+                            <label for="mood" class="form-label fw-medium">
+                                Perasaan saat ini <span class="text-td-muted">(Opsional)</span>
+                            </label>
+                            <select name="mood" id="mood" class="form-select">
+                                <option value="">Tidak memilih mood</option>
+                                @foreach ($moods as $value => $label)
+                                    <option value="{{ $value }}" {{ old('mood') === $value ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('mood')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div class="mb-3">
-                            <label for="guided_today" class="form-label fw-semibold">
-                                1. Apa yang terjadi hari ini?
+                        <div class="col-md-7">
+                            <label for="mood_note" class="form-label fw-medium">
+                                Catatan Mood <span class="text-td-muted">(Opsional)</span>
                             </label>
+                            <input type="text" name="mood_note" id="mood_note" class="form-control"
+                                placeholder="Apa yang membuatmu merasa demikian?" value="{{ old('mood_note') }}"
+                                maxlength="500">
+                            @error('mood_note')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    {{-- Guided Journaling --}}
+                    <div id="guidedWritingSection" class="td-guided-section mb-4" hidden>
+
+                        <div class="mb-4">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="td-guided-intro-icon">
+                                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                                        stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+                                        <circle cx="12" cy="12" r="6" />
+                                        <path d="m10 12 1.5 1.5L14.5 10" />
+                                    </svg>
+                                </div>
+
+                                <div>
+                                    <h6 class="fw-bold mb-1">Mari susun ceritamu perlahan.</h6>
+                                    <p class="text-td-muted small mb-0">
+                                        Jawab satu atau beberapa pertanyaan berikut. Jawabanmu akan disusun
+                                        menjadi cerita yang bisa kamu edit sebelum disimpan.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="td-guided-question-card mb-3">
+                            <div class="td-question-heading">
+                                <span class="td-question-number">01</span>
+                                <label for="guided_today" class="form-label fw-semibold mb-0">
+                                    Apa yang terjadi hari ini?
+                                </label>
+                            </div>
                             <textarea id="guided_today" name="guided_answers[today]" rows="3" maxlength="4500" class="form-control"
                                 data-guided-answer placeholder="Ceritakan kejadian yang paling berkesan...">{{ old('guided_answers.today') }}</textarea>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="guided_burden" class="form-label fw-semibold">
-                                2. Apa hal yang paling membebani pikiranmu?
-                            </label>
+                        <div class="td-guided-question-card mb-3">
+                            <div class="td-question-heading">
+                                <span class="td-question-number">02</span>
+                                <label for="guided_burden" class="form-label fw-semibold mb-0">
+                                    Apa hal yang paling membebani pikiranmu?
+                                </label>
+                            </div>
                             <textarea id="guided_burden" name="guided_answers[burden]" rows="3" maxlength="4500" class="form-control"
                                 data-guided-answer placeholder="Contoh: tugas menumpuk dan deadline berdekatan...">{{ old('guided_answers.burden') }}</textarea>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="guided_feeling" class="form-label fw-semibold">
-                                3. Bagaimana perasaanmu menghadapi situasi tersebut?
-                            </label>
+                        <div class="td-guided-question-card mb-3">
+                            <div class="td-question-heading">
+                                <span class="td-question-number">03</span>
+                                <label for="guided_feeling" class="form-label fw-semibold mb-0">
+                                    Bagaimana perasaanmu menghadapi situasi tersebut?
+                                </label>
+                            </div>
                             <textarea id="guided_feeling" name="guided_answers[feeling]" rows="3" maxlength="4500" class="form-control"
                                 data-guided-answer placeholder="Contoh: lelah, cemas, dan sulit fokus...">{{ old('guided_answers.feeling') }}</textarea>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="guided_support" class="form-label fw-semibold">
-                                4. Dukungan atau perubahan apa yang kamu butuhkan sekarang?
-                            </label>
+                        <div class="td-guided-question-card mb-3">
+                            <div class="td-question-heading">
+                                <span class="td-question-number">04</span>
+                                <label for="guided_support" class="form-label fw-semibold mb-0">
+                                    Dukungan atau perubahan apa yang kamu butuhkan sekarang?
+                                </label>
+                            </div>
                             <textarea id="guided_support" name="guided_answers[support]" rows="3" maxlength="4500" class="form-control"
                                 data-guided-answer placeholder="Contoh: waktu istirahat dan teman untuk bercerita...">{{ old('guided_answers.support') }}</textarea>
                         </div>
 
-                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                            <div class="text-td-muted small">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                            <small class="text-td-muted">
                                 Minimal satu jawaban. Setiap jawaban maksimal 4.500 karakter.
-                            </div>
+                            </small>
+
                             <button type="button" id="rebuildGuidedStory" class="btn btn-outline-td btn-sm">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="me-1" aria-hidden="true">
+                                    <path d="M20 7v5h-5" />
+                                    <path d="M4 17v-5h5" />
+                                    <path d="M5.6 9a7 7 0 0 1 11.5-2L20 12" />
+                                    <path d="m4 12 2.9 5a7 7 0 0 0 11.5-2" />
+                                </svg>
                                 Susun ulang cerita
                             </button>
                         </div>
 
-                        <div id="guidedValidationMessage" class="text-danger small mt-2" role="alert" hidden>
+                        <div id="guidedValidationMessage" class="td-guided-validation mt-3" role="alert" hidden>
                             Isi setidaknya satu jawaban sebelum menyimpan jurnal.
                         </div>
                     </div>
 
-                    {{-- Satu field content dipakai untuk Free Writing dan cerita final Guided. --}}
+                    {{-- Final Journal Content --}}
                     <div class="mb-4">
-                        <label for="content" id="contentLabel" class="form-label fw-medium">Ceritamu</label>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <label for="content" id="contentLabel" class="form-label fw-semibold mb-0">
+                                Ceritamu
+                            </label>
+
+                            <span class="td-content-mode-label">
+                                {{ old('entry_type', 'free') === 'guided' ? 'Cerita tersusun' : 'Free Writing' }}
+                            </span>
+                        </div>
+
                         <textarea name="content" id="content" rows="12" maxlength="20000"
-                            class="form-control @error('content') is-invalid @enderror"
+                            class="form-control td-writing-textarea @error('content') is-invalid @enderror"
                             placeholder="Mulailah menulis dari mana pun yang kamu mau..." required>{{ old('content') }}</textarea>
+
                         @error('content')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        <div class="d-flex justify-content-between align-items-center gap-2 mt-1">
+
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
                             <small id="contentHelp" class="text-td-muted">
                                 Tulis dengan bebas. Ceritamu hanya dapat dilihat oleh akunmu.
                             </small>
-                            <small class="text-td-muted text-nowrap">Maks. 20.000 karakter</small>
+
+                            <small id="contentCounterWrapper" class="td-character-counter">
+                                <span id="contentCharCount" aria-live="polite">0</span> / 20.000 karakter
+                            </small>
                         </div>
                     </div>
 
-                    <div class="bg-light rounded-3 p-3 mb-4">
-                        <div class="d-flex gap-2">
-                            <span class="text-td-primary fw-bold">P</span>
-                            <div>
-                                <h6 class="fw-semibold small mb-1">Jurnal ini bersifat pribadi</h6>
-                                <p class="text-td-muted small mb-0">
-                                    Jurnal hanya dapat dilihat oleh akunmu. Kamu dapat menentukan apakah ingin
-                                    membagikannya saat mengajukan konsultasi.
-                                </p>
-                            </div>
+                    <div class="td-writing-privacy mb-4">
+                        <div class="td-writing-privacy-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" />
+                                <rect x="9" y="10" width="6" height="5" rx="1" />
+                                <path d="M10 10V8a2 2 0 0 1 4 0v2" />
+                            </svg>
+                        </div>
+
+                        <div>
+                            <h6 class="fw-semibold mb-1">Jurnal ini bersifat pribadi</h6>
+                            <p class="text-td-muted small mb-0">
+                                Jurnal hanya dapat dilihat oleh akunmu. Kamu tetap memiliki kendali
+                                untuk menentukan apakah ingin membagikannya saat mengajukan konsultasi.
+                            </p>
                         </div>
                     </div>
 
@@ -169,35 +246,73 @@
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="td-card" id="freeWritingTips">
-                <div class="feature-icon mb-3">F</div>
-                <h6 class="fw-bold mb-3">Menulis bebas</h6>
-                <p class="text-td-muted small">
-                    Mulai dari mana pun yang terasa nyaman. Kamu bisa menulis kejadian, pikiran,
-                    atau perasaan tanpa mengikuti urutan tertentu.
-                </p>
-                <div class="border-start border-3 ps-3 mb-3" style="border-color: #73B7AA !important;">
-                    <p class="small mb-0">Apa hal yang paling ingin kamu keluarkan dari pikiranmu?</p>
+        {{-- Sidebar Tips --}}
+        <div class="col-lg-4 td-writing-sidebar">
+
+            <div class="td-card td-writing-tip-card mb-4" id="freeWritingTips">
+                <div class="td-tip-icon mb-3">
+                    <svg id="freeWritingTipIcon" width="26" height="26" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                        <path d="m15 5 3 3" />
+                    </svg>
                 </div>
-                <div class="border-start border-3 ps-3" style="border-color: #73B7AA !important;">
-                    <p class="small mb-0">Tidak perlu menyusun kata dengan sempurna. Tulis saja dengan jujur.</p>
+
+                <span class="td-section-eyebrow">TIPS MENULIS</span>
+                <h6 class="fw-bold mt-2 mb-3">Menulis bebas</h6>
+
+                <p class="text-td-muted small mb-3">
+                    Mulai dari mana pun yang terasa nyaman. Kamu bisa menulis
+                    kejadian, pikiran, atau perasaan tanpa mengikuti urutan tertentu.
+                </p>
+
+                <div class="td-writing-tip-quote mb-3">
+                    <p class="small mb-0">
+                        Apa hal yang paling ingin kamu keluarkan dari pikiranmu?
+                    </p>
+                </div>
+
+                <div class="td-writing-tip-quote">
+                    <p class="small mb-0">
+                        Tidak perlu menyusun kata dengan sempurna. Tulis saja dengan jujur.
+                    </p>
                 </div>
             </div>
 
-            <div class="td-card" id="guidedWritingTips" hidden>
-                <div class="feature-icon mb-3">G</div>
-                <h6 class="fw-bold mb-3">Menulis dengan panduan</h6>
-                <p class="text-td-muted small">
-                    Jawab pertanyaan secara bertahap. Setelah itu, TemanDengar menyusun jawabanmu
-                    menjadi satu cerita. Kamu tetap bisa mengedit hasil susunannya.
+            <div class="td-card td-writing-tip-card mb-4" id="guidedWritingTips" hidden>
+                <div class="td-tip-icon td-tip-icon-guided mb-3">
+                    <svg id="guidedWritingTipIcon" width="26" height="26" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m12 7 1.7 3.5L17 12l-3.3 1.5L12 17l-1.7-3.5L7 12l3.3-1.5Z" />
+                    </svg>
+                </div>
+
+                <span class="td-section-eyebrow">TIPS MENULIS</span>
+                <h6 class="fw-bold mt-2 mb-3">Menulis dengan panduan</h6>
+
+                <p class="text-td-muted small mb-3">
+                    Jawab pertanyaan secara bertahap. Setelah itu, TemanDengar menyusun
+                    jawabanmu menjadi satu cerita. Kamu tetap bisa mengedit hasil susunannya.
                 </p>
-                <div class="bg-td-soft rounded-3 p-3">
-                    <p class="small mb-0 text-td-primary">
+
+                <div class="td-writing-tip-note">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                        class="flex-shrink-0 mt-1">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 11v5M12 8h.01" />
+                    </svg>
+
+                    <p class="small mb-0">
                         Jawaban yang kosong tidak akan dimasukkan ke cerita.
                     </p>
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -213,250 +328,196 @@
         </div>
     </div>
 
-    <style>
-        .td-journal-loading {
-            position: fixed;
-            inset: 0;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: rgba(23, 39, 55, .48);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transition: opacity .2s ease, visibility .2s ease;
-        }
+    @push('scripts')
+        <script>
+            (() => {
+                const form = document.getElementById('journalCreateForm');
+                const overlay = document.getElementById('journalLoadingOverlay');
+                const entryType = document.getElementById('entry_type');
+                const guidedSection = document.getElementById('guidedWritingSection');
+                const contentField = document.getElementById('content');
+                const contentLabel = document.getElementById('contentLabel');
+                const contentHelp = document.getElementById('contentHelp');
+                const guidedTips = document.getElementById('guidedWritingTips');
+                const freeTips = document.getElementById('freeWritingTips');
+                const guidedMessage = document.getElementById('guidedValidationMessage');
+                const rebuildButton = document.getElementById('rebuildGuidedStory');
+                const contentCharCount = document.getElementById('contentCharCount');
+                const contentCounterWrapper = document.getElementById('contentCounterWrapper');
+                const contentModeLabel = document.querySelector('.td-content-mode-label');
 
-        .td-journal-loading.is-visible {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
+                if (!form || !overlay || !entryType || !contentField) return;
 
-        .td-journal-loading__dialog {
-            width: min(100%, 390px);
-            padding: 32px 28px;
-            border: 1px solid rgba(35, 71, 168, .08);
-            border-radius: 20px;
-            background: #fff;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(15, 35, 55, .18);
-        }
+                let isSubmitting = false;
+                let contentManuallyEdited = contentField.value.trim().length > 0;
 
-        .td-journal-loading__spinner {
-            width: 44px;
-            height: 44px;
-            margin: 0 auto 20px;
-            border: 4px solid #e7edf7;
-            border-top-color: #2347a8;
-            border-radius: 50%;
-            animation: td-journal-spin .8s linear infinite;
-        }
+                function updateContentCounter() {
+                    if (!contentCharCount || !contentCounterWrapper) return;
+                    const totalCharacters = contentField.value.length;
+                    contentCharCount.textContent = totalCharacters.toLocaleString('id-ID');
 
-        @keyframes td-journal-spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+                    const isNearLimit = totalCharacters >= 19000;
+                    const isAtLimit = totalCharacters >= 20000;
 
-        @media (prefers-reduced-motion: reduce) {
-            .td-journal-loading__spinner {
-                animation-duration: 1.8s;
-            }
-
-            .td-journal-loading {
-                transition: none;
-            }
-        }
-    </style>
-
-    <script>
-        (() => {
-            const form = document.getElementById('journalCreateForm');
-            const overlay = document.getElementById('journalLoadingOverlay');
-            const entryType = document.getElementById('entry_type');
-            const guidedSection = document.getElementById('guidedWritingSection');
-            const contentField = document.getElementById('content');
-            const contentLabel = document.getElementById('contentLabel');
-            const contentHelp = document.getElementById('contentHelp');
-            const guidedTips = document.getElementById('guidedWritingTips');
-            const freeTips = document.getElementById('freeWritingTips');
-            const guidedMessage = document.getElementById('guidedValidationMessage');
-            const rebuildButton = document.getElementById('rebuildGuidedStory');
-
-            if (!form || !overlay || !entryType || !contentField) return;
-
-            let isSubmitting = false;
-            let contentManuallyEdited = contentField.value.trim().length > 0;
-            const submitButtons = form.querySelectorAll('[data-journal-submit]');
-            const guidedFields = Array.from(form.querySelectorAll('[data-guided-answer]'));
-
-            function addFinalPunctuation(value) {
-                const text = value.trim();
-                if (!text) return '';
-                return /[.!?…]$/.test(text) ? text : `${text}.`;
-            }
-
-            function buildGuidedStory() {
-                const answers = guidedFields.map(field => field.value.trim());
-                const [today, burden, feeling, support] = answers;
-                const paragraphs = [];
-
-                if (today) paragraphs.push(addFinalPunctuation(today));
-
-                if (burden) {
-                    paragraphs.push(
-                        `Hal lain yang cukup membebani pikiranku adalah ${addFinalPunctuation(burden)}`
-                    );
+                    contentCounterWrapper.classList.toggle('is-near-limit', isNearLimit && !isAtLimit);
+                    contentCounterWrapper.classList.toggle('is-at-limit', isAtLimit);
                 }
 
-                if (feeling) {
-                    paragraphs.push(
-                        `Saat menghadapi situasi tersebut, perasaan yang muncul adalah ${addFinalPunctuation(feeling)}`
-                    );
+                const submitButtons = form.querySelectorAll('[data-journal-submit]');
+                const guidedFields = Array.from(form.querySelectorAll('[data-guided-answer]'));
+
+                function addFinalPunctuation(value) {
+                    const text = value.trim();
+                    if (!text) return '';
+                    return /[.!?…]$/.test(text) ? text : `${text}.`;
                 }
 
-                if (support) {
-                    paragraphs.push(
-                        `Saat ini, hal yang aku butuhkan adalah ${addFinalPunctuation(support)}`
-                    );
+                function buildGuidedStory() {
+                    const [today, burden, feeling, support] = guidedFields.map(field => field.value.trim());
+                    const paragraphs = [];
+
+                    if (today) paragraphs.push(addFinalPunctuation(today));
+                    if (burden) paragraphs.push(
+                        `Hal lain yang cukup membebani pikiranku adalah ${addFinalPunctuation(burden)}`);
+                    if (feeling) paragraphs.push(
+                        `Saat menghadapi situasi tersebut, perasaan yang muncul adalah ${addFinalPunctuation(feeling)}`);
+                    if (support) paragraphs.push(`Saat ini, hal yang aku butuhkan adalah ${addFinalPunctuation(support)}`);
+
+                    return paragraphs.join('\n\n');
                 }
 
-                return paragraphs.join('\n\n');
-            }
+                function refreshGuidedStory(force = false) {
+                    if (entryType.value !== 'guided') return;
 
-            function refreshGuidedStory(force = false) {
-                if (entryType.value !== 'guided') return;
-
-                const hasAnswer = guidedFields.some(field => field.value.trim() !== '');
-                if (!hasAnswer) {
-                    if (guidedMessage) {
-                        guidedMessage.textContent = 'Isi setidaknya satu jawaban sebelum menyimpan jurnal.';
-                        guidedMessage.hidden = false;
-                    }
-                    return false;
-                }
-
-                if (!contentManuallyEdited || force) {
-                    const story = buildGuidedStory();
-                    if (story.length > 20000) {
+                    const hasAnswer = guidedFields.some(field => field.value.trim() !== '');
+                    if (!hasAnswer) {
                         if (guidedMessage) {
-                            guidedMessage.textContent =
-                                'Cerita hasil susunan melebihi 20.000 karakter. Ringkas jawabanmu.';
+                            guidedMessage.textContent = 'Isi setidaknya satu jawaban sebelum menyimpan jurnal.';
                             guidedMessage.hidden = false;
                         }
                         return false;
                     }
 
-                    contentField.value = story;
-                    contentManuallyEdited = false;
-                }
-
-                if (guidedMessage) guidedMessage.hidden = true;
-                return true;
-            }
-
-            function toggleWritingMode() {
-                const isGuided = entryType.value === 'guided';
-                guidedSection.hidden = !isGuided;
-                guidedTips.hidden = !isGuided;
-                freeTips.hidden = isGuided;
-                // Mode Guided membuat content melalui jawaban, jadi validasi kosong
-                // ditangani di submit setelah cerita disusun.
-                contentField.required = !isGuided;
-
-                contentLabel.textContent = isGuided ?
-                    'Cerita yang tersusun (bisa diedit)' :
-                    'Ceritamu';
-
-                contentField.placeholder = isGuided ?
-                    'Jawab pertanyaan di atas untuk menyusun cerita. Kamu juga bisa mengedit teks ini.' :
-                    'Mulailah menulis dari mana pun yang kamu mau...';
-
-                contentHelp.textContent = isGuided ?
-                    'Ini adalah cerita final yang akan disimpan dan dikirim ke Hermes.' :
-                    'Tulis dengan bebas. Ceritamu hanya dapat dilihat oleh akunmu.';
-
-                if (isGuided && guidedFields.some(field => field.value.trim() !== '') &&
-                    !contentField.value.trim()) {
-                    refreshGuidedStory();
-                }
-
-                if (guidedMessage) guidedMessage.hidden = true;
-            }
-
-            guidedFields.forEach(field => {
-                field.addEventListener('input', () => {
-                    if (guidedMessage) guidedMessage.hidden = true;
-                    if (!contentManuallyEdited) refreshGuidedStory();
-                });
-            });
-
-            contentField.addEventListener('input', () => {
-                if (entryType.value === 'guided') contentManuallyEdited = true;
-            });
-
-            rebuildButton?.addEventListener('click', () => {
-                contentManuallyEdited = false;
-                refreshGuidedStory(true);
-            });
-
-            entryType.addEventListener('change', toggleWritingMode);
-            toggleWritingMode();
-
-            form.addEventListener('submit', (event) => {
-                if (isSubmitting) {
-                    event.preventDefault();
-                    return;
-                }
-
-                if (entryType.value === 'guided') {
-                    const hasAnswer = guidedFields.some(field => field.value.trim() !== '');
-                    if (!hasAnswer) {
-                        event.preventDefault();
-                        if (guidedMessage) {
-                            guidedMessage.textContent = 'Isi setidaknya satu jawaban sebelum menyimpan jurnal.';
-                            guidedMessage.hidden = false;
+                    if (!contentManuallyEdited || force) {
+                        const story = buildGuidedStory();
+                        if (story.length > 20000) {
+                            if (guidedMessage) {
+                                guidedMessage.textContent =
+                                    'Cerita hasil susunan melebihi 20.000 karakter. Ringkas jawabanmu.';
+                                guidedMessage.hidden = false;
+                            }
+                            return false;
                         }
-                        guidedFields[0]?.focus();
-                        return;
+
+                        contentField.value = story;
+                        contentManuallyEdited = false;
+                        updateContentCounter();
                     }
 
-                    // Jika draft belum pernah diedit, susun ulang dari jawaban terbaru.
-                    if (!contentManuallyEdited && !refreshGuidedStory()) {
+                    if (guidedMessage) guidedMessage.hidden = true;
+                    return true;
+                }
+
+                function toggleWritingMode() {
+                    const isGuided = entryType.value === 'guided';
+
+                    guidedSection.hidden = !isGuided;
+                    guidedTips.hidden = !isGuided;
+                    freeTips.hidden = isGuided;
+
+                    if (contentModeLabel) {
+                        contentModeLabel.textContent = isGuided ? 'Cerita tersusun' : 'Free Writing';
+                    }
+
+                    contentLabel.textContent = isGuided ? 'Cerita yang tersusun (bisa diedit)' : 'Ceritamu';
+                    contentField.placeholder = isGuided ?
+                        'Jawab pertanyaan di atas untuk menyusun cerita. Kamu juga bisa mengedit teks ini.' :
+                        'Mulailah menulis dari mana pun yang kamu mau...';
+                    contentHelp.textContent = isGuided ?
+                        'Ini adalah cerita final yang akan disimpan dan dikirim ke Hermes.' :
+                        'Tulis dengan bebas. Ceritamu hanya dapat dilihat oleh akunmu.';
+
+                    if (isGuided && guidedFields.some(field => field.value.trim() !== '') && !contentField.value.trim()) {
+                        refreshGuidedStory();
+                    }
+
+                    if (guidedMessage) guidedMessage.hidden = true;
+                }
+
+                guidedFields.forEach(field => {
+                    field.addEventListener('input', () => {
+                        if (guidedMessage) guidedMessage.hidden = true;
+                        if (!contentManuallyEdited) refreshGuidedStory();
+                    });
+                });
+
+                contentField.addEventListener('input', () => {
+                    if (entryType.value === 'guided') {
+                        contentManuallyEdited = true;
+                    }
+                    updateContentCounter();
+                });
+
+                rebuildButton?.addEventListener('click', () => {
+                    contentManuallyEdited = false;
+                    refreshGuidedStory(true);
+                });
+
+                entryType.addEventListener('change', toggleWritingMode);
+                toggleWritingMode();
+                updateContentCounter();
+
+                form.addEventListener('submit', (event) => {
+                    if (isSubmitting) {
                         event.preventDefault();
                         return;
                     }
-                }
 
-                if (!contentField.value.trim()) {
-                    event.preventDefault();
-                    contentField.focus();
-                    return;
-                }
+                    if (entryType.value === 'guided') {
+                        const hasAnswer = guidedFields.some(field => field.value.trim() !== '');
+                        if (!hasAnswer) {
+                            event.preventDefault();
+                            if (guidedMessage) {
+                                guidedMessage.textContent = 'Isi setidaknya satu jawaban sebelum menyimpan jurnal.';
+                                guidedMessage.hidden = false;
+                            }
+                            guidedFields[0]?.focus();
+                            return;
+                        }
 
-                isSubmitting = true;
-                overlay.classList.add('is-visible');
-                overlay.setAttribute('aria-hidden', 'false');
+                        if (!contentManuallyEdited && !refreshGuidedStory()) {
+                            event.preventDefault();
+                            return;
+                        }
+                    }
 
-                submitButtons.forEach(button => {
-                    button.disabled = true;
-                    button.setAttribute('aria-disabled', 'true');
+                    if (!contentField.value.trim()) {
+                        event.preventDefault();
+                        contentField.focus();
+                        return;
+                    }
+
+                    isSubmitting = true;
+                    overlay.classList.add('is-visible');
+                    overlay.setAttribute('aria-hidden', 'false');
+
+                    submitButtons.forEach(button => {
+                        button.disabled = true;
+                        button.setAttribute('aria-disabled', 'true');
+                    });
                 });
-            });
 
-            window.addEventListener('pageshow', () => {
-                isSubmitting = false;
-                overlay.classList.remove('is-visible');
-                overlay.setAttribute('aria-hidden', 'true');
-                submitButtons.forEach(button => {
-                    button.disabled = false;
-                    button.removeAttribute('aria-disabled');
+                window.addEventListener('pageshow', () => {
+                    isSubmitting = false;
+                    overlay.classList.remove('is-visible');
+                    overlay.setAttribute('aria-hidden', 'true');
+                    submitButtons.forEach(button => {
+                        button.disabled = false;
+                        button.removeAttribute('aria-disabled');
+                    });
                 });
-            });
-        })();
-    </script>
+            })();
+        </script>
+    @endpush
 
 @endsection

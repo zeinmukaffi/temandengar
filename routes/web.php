@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\CounselorConsultationController;
 use App\Http\Controllers\CounselorController;
+use App\Http\Controllers\CounselorProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\MoodCheckinController;
@@ -62,11 +63,9 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
 
-    // Dashboard Pencerita.
-    Route::get('/dashboard', DashboardController::class)
-        ->name('dashboard');
+    // Route umum untuk semua role yang sudah login (Dashboard, Logout, Jurnal, Mood Check-in)
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    // Logout.
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 
@@ -96,43 +95,78 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('journal')
         ->name('journals.destroy');
 
+    // Mencoba ulang pembuatan refleksi AI pada jurnal
+    Route::post('/journals/{journal}/reflection/retry', [JournalController::class, 'retryReflection'])
+        ->whereNumber('journal')
+        ->name('journals.reflection.retry');
+
+    // Menyimpan umpan balik pengguna terhadap refleksi AI
+    Route::patch('/journals/{journal}/reflection/feedback', [JournalController::class, 'feedbackReflection'])
+        ->whereNumber('journal')
+        ->name('journals.reflection.feedback');
+
+    Route::get('/journals/{journal}/reflection/status', [JournalController::class, 'reflectionStatus'])
+        ->whereNumber('journal')
+        ->name('journals.reflection.status');
+
     // Mood Check-in
     Route::post('/mood-checkins', [MoodCheckinController::class, 'store'])
         ->name('mood-checkins.store');
 
-    // Direktori Konselor
-    Route::get('/counselors', [CounselorController::class, 'index'])
-        ->name('counselors.index');
+    // Notifikasi Dalam Aplikasi
+    Route::get('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'read'])
+        ->name('notifications.read');
 
-    // Detail Profil Konselor
-    Route::get('/counselors/{counselor}', [CounselorController::class, 'show'])
-        ->whereNumber('counselor')
-        ->name('counselors.show');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'readAll'])
+        ->name('notifications.read-all');
+    /*
+    |--------------------------------------------------------------------------
+    | Pencerita Routes
+    |--------------------------------------------------------------------------
+    | Halaman dan tindakan khusus Pencerita.
+    */
 
+    Route::middleware('role:pencerita')->group(function () {
 
-    // Pengajuan Konsultasi
-    Route::get(
-        '/counselors/{counselor}/consultations/create',
-        [ConsultationController::class, 'create']
-    )
-        ->whereNumber('counselor')
-        ->name('consultations.create');
+        // Direktori Konselor
+        Route::get('/counselors', [CounselorController::class, 'index'])
+            ->name('counselors.index');
 
-    Route::post(
-        '/counselors/{counselor}/consultations',
-        [ConsultationController::class, 'store']
-    )
-        ->whereNumber('counselor')
-        ->name('consultations.store');
+        // Detail Profil Konselor
+        Route::get('/counselors/{counselor}', [CounselorController::class, 'show'])
+            ->whereNumber('counselor')
+            ->name('counselors.show');
 
-    // Riwayat Konsultasi Pencerita
-    Route::get('/consultations', [ConsultationController::class, 'index'])
-        ->name('consultations.index');
+        // Pengajuan Konsultasi
+        Route::get(
+            '/counselors/{counselor}/consultations/create',
+            [ConsultationController::class, 'create']
+        )
+            ->whereNumber('counselor')
+            ->name('consultations.create');
 
-    // Detail Konsultasi
-    Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])
-        ->whereNumber('consultation')
-        ->name('consultations.show');
+        Route::post(
+            '/counselors/{counselor}/consultations',
+            [ConsultationController::class, 'store']
+        )
+            ->whereNumber('counselor')
+            ->name('consultations.store');
+
+        // Riwayat Konsultasi Pencerita
+        Route::get('/consultations', [ConsultationController::class, 'index'])
+            ->name('consultations.index');
+
+        // Detail Konsultasi
+        Route::get('/consultations/{consultation}', [ConsultationController::class, 'show'])
+            ->whereNumber('consultation')
+            ->name('consultations.show');
+
+        // Pembatalan Konsultasi oleh Pencerita
+        Route::patch('/consultations/{consultation}/cancel', [ConsultationController::class, 'cancel'])
+            ->whereNumber('consultation')
+            ->name('consultations.cancel');
+
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -141,24 +175,26 @@ Route::middleware('auth')->group(function () {
     | Halaman dan tindakan khusus Konselor Sebaya.
     */
 
-    Route::prefix('counselor')
+    Route::middleware('role:konselor')
+        ->prefix('counselor')
         ->name('counselor.')
         ->group(function () {
 
-            // Dashboard / Inbox Konselor.
+            // Dashboard / Inbox Konselor
             Route::get('/consultations', [
                 CounselorConsultationController::class,
                 'index'
             ])->name('consultations.index');
 
-            // Detail permintaan konsultasi.
+            // Detail permintaan konsultasi
             Route::get('/consultations/{consultation}', [
                 CounselorConsultationController::class,
                 'show'
             ])
                 ->whereNumber('consultation')
                 ->name('consultations.show');
-            // Mencoba ulang pembuatan ringkasan Hermes.
+
+            // Mencoba ulang pembuatan ringkasan Hermes
             Route::patch('/consultations/{consultation}/brief/retry', [
                 CounselorConsultationController::class,
                 'retryBrief'
@@ -166,7 +202,7 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber('consultation')
                 ->name('consultations.brief.retry');
 
-            // Terima permintaan.
+            // Terima permintaan
             Route::patch('/consultations/{consultation}/accept', [
                 CounselorConsultationController::class,
                 'accept'
@@ -174,7 +210,7 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber('consultation')
                 ->name('consultations.accept');
 
-            // Tolak permintaan.
+            // Tolak permintaan
             Route::patch('/consultations/{consultation}/reject', [
                 CounselorConsultationController::class,
                 'reject'
@@ -182,7 +218,7 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber('consultation')
                 ->name('consultations.reject');
 
-            // Menetapkan atau memperbarui jadwal final.
+            // Menetapkan atau memperbarui jadwal final
             Route::patch('/consultations/{consultation}/schedule', [
                 CounselorConsultationController::class,
                 'schedule'
@@ -190,13 +226,29 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber('consultation')
                 ->name('consultations.schedule');
 
-            // Menandai konsultasi selesai.
+            // Menandai konsultasi selesai
             Route::patch('/consultations/{consultation}/complete', [
                 CounselorConsultationController::class,
                 'complete'
             ])
                 ->whereNumber('consultation')
                 ->name('consultations.complete');
+
+            // Pengaturan Profil & Ketersediaan Konselor
+            Route::get('/profile', [
+                CounselorProfileController::class,
+                'edit'
+            ])->name('profile.edit');
+
+            Route::put('/profile', [
+                CounselorProfileController::class,
+                'update'
+            ])->name('profile.update');
+
+            Route::get('/consultations/{consultation}/brief/status', [CounselorConsultationController::class, 'briefStatus'])
+                ->whereNumber('consultation')
+                ->name('consultations.brief.status');
+
         });
 
 });
