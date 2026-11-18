@@ -187,7 +187,7 @@
                                 class="form-check-input" {{ old('share_ai_reflection') ? 'checked' : '' }}>
 
                             <label for="shareAiReflection" class="form-check-label fw-semibold">
-                                Bagikan Refleksi AI (Hermes)
+                                Bagikan Refleksi AI (Nala AI)
                             </label>
                         </div>
 
@@ -300,7 +300,7 @@
             <div class="td-journal-loading__spinner" aria-hidden="true"></div>
             <h5 class="fw-bold mb-2">Mengirim Permintaan Konsultasi</h5>
             <p class="text-td-muted small mb-0">
-                Permintaanmu sedang disimpan dan Hermes sedang menyiapkan ringkasan untuk konselor.
+                Permintaanmu sedang disimpan dan Nala AI sedang menyiapkan ringkasan untuk konselor.
                 Proses ini bisa memerlukan beberapa saat. Jangan tutup atau refresh halaman ini.
             </p>
         </div>

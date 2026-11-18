@@ -73,7 +73,7 @@
 
     <div class="row g-4 consultation-detail-layout align-items-start">
 
-        {{-- Kolom Kiri: Detail Permintaan, Materi & Hermes Brief --}}
+        {{-- Kolom Kiri: Detail Permintaan, Materi & Nala AI Brief --}}
         <div class="col-lg-8 d-flex flex-column gap-4">
 
             {{-- Card 1: Informasi Permintaan --}}
@@ -257,7 +257,7 @@
                 @endif
             </section>
 
-            {{-- Card 3: Ringkasan Persiapan Konsultasi dari Hermes --}}
+            {{-- Card 3: Ringkasan Persiapan Konsultasi dari Nala AI --}}
             <section class="td-card consultation-compact-card td-brief-card">
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div class="feature-icon flex-shrink-0" style="width: 42px; height: 42px;">
@@ -269,7 +269,7 @@
                         </svg>
                     </div>
                     <div>
-                        <span class="td-section-eyebrow">HERMES BRIEF</span>
+                        <span class="td-section-eyebrow">Nala AI BRIEF</span>
                         <h5 class="fw-bold mb-0">Ringkasan Persiapan Konsultasi</h5>
                     </div>
                 </div>
@@ -287,7 +287,7 @@
                 @elseif (in_array($consultation->brief_status, ['pending', 'processing']))
                     <div class="bg-white border rounded-3 p-3">
                         <p class="text-td-muted small mb-0">
-                            Ringkasan persiapan konsultasi sedang dibuat oleh Hermes. Silakan muat ulang beberapa saat lagi.
+                            Ringkasan persiapan konsultasi sedang dibuat oleh Nala AI. Silakan muat ulang beberapa saat lagi.
                         </p>
                     </div>
                 @elseif ($consultation->brief_status === 'failed')
@@ -552,13 +552,13 @@
 
     </div>
 
-    {{-- Loading overlay saat Hermes membuat ulang ringkasan --}}
+    {{-- Loading overlay saat Nala AI membuat ulang ringkasan --}}
     <div id="briefRetryLoading" class="td-journal-loading" aria-hidden="true">
         <div class="td-journal-loading__dialog" role="status" aria-live="polite" aria-atomic="true">
             <div class="td-journal-loading__spinner" aria-hidden="true"></div>
             <h5 class="fw-bold mb-2">Membuat Ulang Ringkasan</h5>
             <p class="text-td-muted small mb-0">
-                Hermes sedang menyiapkan ringkasan konsultasi.
+                Nala AI sedang menyiapkan ringkasan konsultasi.
                 Proses ini mungkin memerlukan beberapa saat. Jangan tutup halaman ini.
             </p>
         </div>

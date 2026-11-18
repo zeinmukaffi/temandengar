@@ -121,7 +121,7 @@ class JournalController extends Controller
 
         return redirect()
             ->route('journals.show', $journal->id)
-            ->with('success', 'Jurnal berhasil disimpan. Hermes sedang menyiapkan refleksi untukmu.');
+            ->with('success', 'Jurnal berhasil disimpan. Nala AI sedang menyiapkan refleksi untukmu.');
     }
 
     /**
@@ -188,7 +188,7 @@ class JournalController extends Controller
         $message = 'Jurnal berhasil diperbarui.';
 
         if ($reflectionNeedsRefresh) {
-            $this->queueReflection($journal, (int) $request->user()->id);$message = 'Jurnal berhasil diperbarui. Hermes sedang memperbarui refleksi AI.';
+            $this->queueReflection($journal, (int) $request->user()->id);$message = 'Jurnal berhasil diperbarui. Nala AI sedang memperbarui refleksi AI.';
         }
 
         return redirect()

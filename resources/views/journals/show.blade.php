@@ -234,7 +234,7 @@
                         </svg>
                     </div>
                     <div>
-                        <span class="td-section-eyebrow">HERMES INSIGHT</span>
+                        <span class="td-section-eyebrow">Nala AI INSIGHT</span>
                         <h5 class="fw-bold mb-0">AI Reflection</h5>
                     </div>
                 </div>
@@ -353,7 +353,7 @@
                 @endif
                 <div class="border-top pt-3 mt-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <span class="text-td-muted small">
-                        Apakah refleksi dari Hermes ini terasa membantu?
+                        Apakah refleksi dari Nala AI ini terasa membantu?
                     </span>
 
                     <div class="d-flex align-items-center gap-2">
@@ -390,7 +390,7 @@
             <div class="td-journal-loading__spinner" aria-hidden="true"></div>
             <h5 class="fw-bold mb-2">Membuat Ulang Refleksi AI</h5>
             <p class="text-td-muted small mb-0">
-                Hermes sedang membaca kembali ceritamu. Proses ini memerlukan beberapa saat, mohon jangan tutup halaman ini.
+                Nala AI sedang membaca kembali ceritamu. Proses ini memerlukan beberapa saat, mohon jangan tutup halaman ini.
             </p>
         </div>
     </div>

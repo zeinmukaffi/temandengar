@@ -244,6 +244,14 @@ class ConsultationController extends Controller
             ));
         }
 
+        app(\App\Services\N8nWebhookService::class)->sendConsultationEvent(
+            consultation: $consultation,
+            eventType: 'submitted',
+            title: 'Pengajuan Konsultasi Baru',
+            message: "{$user->name} mengajukan konsultasi dengan topik \"{$consultation->topic}\".",
+            actionUrl: route('counselor.consultations.show', $consultation->id)
+        );
+
         return redirect()
             ->route('consultations.show', $consultation->id)
             ->with('success', 'Permintaan konsultasi berhasil dikirim. Ringkasan persiapan sedang dibuat untuk konselor.');
@@ -264,7 +272,7 @@ class ConsultationController extends Controller
             'cancellation_reason.max' => 'Alasan pembatalan maksimal 500 karakter.',
         ]);
 
-        return DB::transaction(function () use ($user, $consultation, $validated) {
+        $record = DB::transaction(function () use ($user, $consultation, $validated) {
             $record = $user->consultations()
                 ->lockForUpdate()
                 ->findOrFail($consultation);
@@ -300,9 +308,19 @@ class ConsultationController extends Controller
                 ));
             }
 
-            return redirect()
-                ->route('consultations.show', $record->id)
-                ->with('success', 'Permintaan konsultasi berhasil dibatalkan.');
+            return $record;
         });
+
+        app(\App\Services\N8nWebhookService::class)->sendConsultationEvent(
+            consultation: $record,
+            eventType: 'cancelled',
+            title: 'Konsultasi Dibatalkan Pencerita',
+            message: "{$user->name} membatalkan pengajuan konsultasi topik \"{$record->topic}\".",
+            actionUrl: route('counselor.consultations.show', $record->id)
+        );
+
+        return redirect()
+            ->route('consultations.show', $record->id)
+            ->with('success', 'Permintaan konsultasi berhasil dibatalkan.');
     }
 }

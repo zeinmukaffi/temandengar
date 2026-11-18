@@ -322,7 +322,7 @@
             <div class="td-journal-loading__spinner" aria-hidden="true"></div>
             <h5 class="fw-bold mb-2">Jurnal sedang disimpan</h5>
             <p class="text-td-muted small mb-0">
-                Ceritamu sedang disimpan dan Hermes sedang menyiapkan refleksi.
+                Ceritamu sedang disimpan dan Nala AI sedang menyiapkan refleksi.
                 Proses ini bisa memerlukan beberapa saat. Jangan tutup halaman ini.
             </p>
         </div>
@@ -434,7 +434,7 @@
                         'Jawab pertanyaan di atas untuk menyusun cerita. Kamu juga bisa mengedit teks ini.' :
                         'Mulailah menulis dari mana pun yang kamu mau...';
                     contentHelp.textContent = isGuided ?
-                        'Ini adalah cerita final yang akan disimpan dan dikirim ke Hermes.' :
+                        'Ini adalah cerita final yang akan disimpan dan dikirim ke Nala AI.' :
                         'Tulis dengan bebas. Ceritamu hanya dapat dilihat oleh akunmu.';
 
                     if (isGuided && guidedFields.some(field => field.value.trim() !== '') && !contentField.value.trim()) {

@@ -36,17 +36,17 @@ return [
     ],
 
     'n8n' => [
-        'journal_reflection_url' => env('N8N_JOURNAL_REFLECTION_URL'),
-
-        // Webhook untuk pembuatan ringkasan konsultasi.
-        'consultation_summary_url' => env('N8N_CONSULTATION_SUMMARY_URL'),
-
-        'webhook_header' => env(
-            'N8N_WEBHOOK_HEADER',
-            'X-TemanDengar-Token'
-        ),
-
+        'enabled' => env('N8N_ENABLED', false),
+        'schedule_webhook_url' => env('N8N_SCHEDULE_WEBHOOK_URL'),
+        'counselor_inbox' => env('N8N_COUNSELOR_INBOX'),
+        'webhook_header' => env('N8N_WEBHOOK_HEADER', 'X-TemanDengar-Token'),
         'webhook_token' => env('N8N_WEBHOOK_TOKEN'),
+        'timeout' => (int) env('N8N_TIMEOUT', 5),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
     ],
 
 

@@ -157,7 +157,7 @@ class CounselorConsultationController extends Controller
     }
 
     /**
-     * Mencoba ulang pembuatan ringkasan konsultasi oleh Hermes di latar belakang.
+     * Mencoba ulang pembuatan ringkasan konsultasi oleh Nala AI di latar belakang.
      */
     public function retryBrief(
         Request $request,
@@ -232,17 +232,13 @@ class CounselorConsultationController extends Controller
     ): RedirectResponse {
         $counselor = $this->getCounselor($request);
 
-        return DB::transaction(function () use ($counselor, $consultation, $newStatus, $successMessage) {
+        $consultationRecord = DB::transaction(function () use ($counselor, $consultation, $newStatus) {
             $consultationRecord = $counselor->consultations()
                 ->lockForUpdate()
                 ->findOrFail($consultation);
 
             if ($consultationRecord->status !== 'pending_confirmation') {
-                return redirect()
-                    ->route('counselor.consultations.show', $consultationRecord->id)
-                    ->withErrors([
-                        'status' => 'Permintaan ini sudah pernah diproses.'
-                    ]);
+                return null;
             }
 
             $consultationRecord->update([
@@ -263,10 +259,29 @@ class CounselorConsultationController extends Controller
                 ));
             }
 
-            return redirect()
-                ->route('counselor.consultations.show', $consultationRecord->id)
-                ->with('success', $successMessage);
+            return $consultationRecord;
         });
+
+        if (!$consultationRecord) {
+            return redirect()
+                ->route('counselor.consultations.show', $consultation)
+                ->withErrors(['status' => 'Permintaan ini sudah pernah diproses.']);
+        }
+
+        $isAccepted = $newStatus === 'accepted';
+        app(\App\Services\N8nWebhookService::class)->sendConsultationEvent(
+            consultation: $consultationRecord,
+            eventType: $newStatus,
+            title: $isAccepted ? 'Pengajuan Konsultasi Diterima' : 'Pengajuan Konsultasi Ditolak',
+            message: $isAccepted
+            ? "{$counselor->name} menerima pengajuan konsultasi topik \"{$consultationRecord->topic}\"."
+            : "{$counselor->name} menolak pengajuan konsultasi topik \"{$consultationRecord->topic}\".",
+            actionUrl: route('consultations.show', $consultationRecord->id)
+        );
+
+        return redirect()
+            ->route('counselor.consultations.show', $consultationRecord->id)
+            ->with('success', $successMessage);
     }
 
     /**
@@ -302,7 +317,7 @@ class CounselorConsultationController extends Controller
             'meeting_notes.max' => 'Catatan pertemuan maksimal 1.000 karakter.',
         ]);
 
-        return DB::transaction(function () use ($counselor, $consultation, $validated) {
+        $result = DB::transaction(function () use ($counselor, $consultation, $validated) {
             $record = $counselor->consultations()
                 ->lockForUpdate()
                 ->findOrFail($consultation);
@@ -337,10 +352,27 @@ class CounselorConsultationController extends Controller
                 ));
             }
 
-            return redirect()
-                ->route('counselor.consultations.show', $record->id)
-                ->with('success', 'Jadwal dan informasi pertemuan konsultasi berhasil disimpan.');
+            return [
+                'record' => $record,
+                'is_reschedule' => $isReschedule,
+            ];
         });
+
+        $record = $result['record'];
+        $formattedSchedule = $record->scheduled_at->format('d M Y, H:i') . ' WIB';
+        $consultationLabel = $result['is_reschedule'] ? 'Jadwal Konsultasi Diperbarui' : 'Jadwal Konsultasi Ditetapkan';
+
+        app(\App\Services\N8nWebhookService::class)->sendConsultationEvent(
+            consultation: $record,
+            eventType: $result['is_reschedule'] ? 'rescheduled' : 'scheduled',
+            title: $consultationLabel,
+            message: "{$counselor->name} menetapkan jadwal sesi \"{$record->topic}\" pada {$formattedSchedule}.",
+            actionUrl: route('consultations.show', $record->id)
+        );
+
+        return redirect()
+            ->route('counselor.consultations.show', $record->id)
+            ->with('success', 'Jadwal dan informasi pertemuan konsultasi berhasil disimpan.');
     }
 
     /**
@@ -362,7 +394,7 @@ class CounselorConsultationController extends Controller
             'counselor_notes.max' => 'Catatan pasca-sesi maksimal 2.000 karakter.',
         ]);
 
-        return DB::transaction(function () use ($counselor, $consultation, $validated) {
+        $record = DB::transaction(function () use ($counselor, $consultation, $validated) {
             $record = $counselor->consultations()
                 ->lockForUpdate()
                 ->findOrFail($consultation);
@@ -402,9 +434,19 @@ class CounselorConsultationController extends Controller
                 ));
             }
 
-            return redirect()
-                ->route('counselor.consultations.show', $record->id)
-                ->with('success', 'Konsultasi berhasil ditandai selesai.');
+            return $record;
         });
+
+        app(\App\Services\N8nWebhookService::class)->sendConsultationEvent(
+            consultation: $record,
+            eventType: 'completed',
+            title: 'Sesi Konsultasi Selesai',
+            message: "{$counselor->name} telah menandai sesi \"{$record->topic}\" selesai.",
+            actionUrl: route('counselor.consultations.show', $record->id)
+        );
+
+        return redirect()
+            ->route('counselor.consultations.show', $record->id)
+            ->with('success', 'Konsultasi berhasil ditandai selesai.');
     }
 }

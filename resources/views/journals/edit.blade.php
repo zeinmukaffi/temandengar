@@ -155,7 +155,7 @@
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
                             <small id="contentHelp" class="text-td-muted">
                                 {{ $currentEntryType === 'guided'
-                                    ? 'Edit cerita final yang akan disimpan dan diproses ulang oleh Hermes.'
+                                    ? 'Edit cerita final yang akan disimpan dan diproses ulang oleh Nala AI.'
                                     : 'Tulis atau perbarui ceritamu dengan bebas.' }}
                             </small>
 
@@ -233,7 +233,7 @@
             <h5 class="fw-bold mb-2">Menyimpan perubahan jurnal</h5>
             <p class="text-td-muted small mb-0">
                 Perubahanmu sedang disimpan. Jika isi atau metode menulis berubah,
-                Hermes juga akan memperbarui refleksinya. Jangan tutup halaman ini.
+                Nala AI juga akan memperbarui refleksinya. Jangan tutup halaman ini.
             </p>
         </div>
     </div>
@@ -279,7 +279,7 @@
 
                     contentLabel.textContent = isGuided ? 'Cerita yang tersusun' : 'Isi Jurnal';
                     contentHelp.textContent = isGuided ?
-                        'Edit cerita final yang akan disimpan dan diproses ulang oleh Hermes.' :
+                        'Edit cerita final yang akan disimpan dan diproses ulang oleh Nala AI.' :
                         'Tulis atau perbarui ceritamu dengan bebas.';
 
                     if (tipTitle) tipTitle.textContent = isGuided ? 'Cerita dari panduan' : 'Menulis bebas';
